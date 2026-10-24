@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kulturecompass.app/schemas/growth-plan-llm-output/1.0.json",
+  "title": "GrowthPlanDraft",
+  "description": "Structured output the LLM must return for synthesis (schema v1.0). Kept free of $ref so it can be sent directly as Gemini responseJsonSchema / OpenAI json_schema. Server-side validation in OutputValidator enforces cross-field rules (evidence keys must exist, etc.).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "summary", "insights", "collaborations", "campaigns", "experiments", "mentionedEntities", "limitations"],
+  "properties": {
+    "schemaVersion": { "type": "string", "enum": ["1.0"] },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["headline", "overview"],
+      "properties": {
+        "headline": { "type": "string", "minLength": 10, "maxLength": 140 },
+        "overview": { "type": "string", "minLength": 40, "maxLength": 900 }
+      }
+    },
+    "insights": {
+      "type": "array", "minItems": 3, "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "finding", "whyItMatters", "evidenceKeys", "assumptions", "limitations"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^ins_[1-9]$" },
+          "title": { "type": "string", "maxLength": 120 },
+          "finding": { "type": "string", "maxLength": 500, "description": "What the retrieved evidence shows. Factual restatement only." },
+          "whyItMatters": { "type": "string", "maxLength": 500, "description": "Interpretation for this business. Clearly an inference." },
+          "evidenceKeys": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "pattern": "^ev_[0-9]{3}$" } },
+          "assumptions": { "type": "array", "maxItems": 4, "items": { "type": "string", "maxLength": 200 } },
+          "limitations": { "type": "array", "maxItems": 3, "items": { "type": "string", "maxLength": 200 } }
+        }
+      }
+    },
+    "collaborations": {
+      "type": "array", "minItems": 0, "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "partnerEvidenceKey", "partnerName", "culturalConnection", "format", "fitRationale", "testIdea", "evidenceKeys", "assumptions"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^col_[1-9]$" },
+          "partnerEvidenceKey": { "type": "string", "pattern": "^ev_[0-9]{3}$" },
+          "partnerName": { "type": "string", "maxLength": 200 },
+          "culturalConnection": { "type": "string", "maxLength": 400 },
+          "format": { "type": "string", "maxLength": 200, "description": "e.g. capsule drop, co-hosted event, content series" },
+          "fitRationale": { "type": "string", "maxLength": 500 },
+          "testIdea": { "type": "string", "maxLength": 300 },
+          "evidenceKeys": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "pattern": "^ev_[0-9]{3}$" } },
+          "assumptions": { "type": "array", "maxItems": 4, "items": { "type": "string", "maxLength": 200 } }
+        }
+      }
+    },
+    "campaigns": {
+      "type": "array", "minItems": 1, "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "objective", "targetHypothesis", "culturalInsight", "angle", "execution", "successMetric", "effortCategory", "evidenceKeys", "assumptions"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^cam_[1-9]$" },
+          "title": { "type": "string", "maxLength": 120 },
+          "objective": { "type": "string", "maxLength": 200 },
+          "targetHypothesis": { "type": "string", "maxLength": 300 },
+          "culturalInsight": { "type": "string", "maxLength": 400 },
+          "angle": { "type": "string", "maxLength": 300 },
+          "execution": { "type": "array", "minItems": 2, "maxItems": 6, "items": { "type": "string", "maxLength": 200 } },
+          "successMetric": { "type": "string", "maxLength": 150 },
+          "effortCategory": { "type": "string", "enum": ["Low", "Medium", "High", "Unknown"] },
+          "evidenceKeys": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "pattern": "^ev_[0-9]{3}$" } },
+          "assumptions": { "type": "array", "maxItems": 4, "items": { "type": "string", "maxLength": 200 } }
+        }
+      }
+    },
+    "experiments": {
+      "type": "array", "minItems": 1, "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "linkedRecommendationId", "hypothesis", "segment", "proposedCampaign", "primaryMetric", "measurementPeriodDays", "successThreshold", "thresholdIsProposedDefault", "ifSuccess", "ifFailure"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^exp_[1-9]$" },
+          "linkedRecommendationId": { "type": "string", "pattern": "^(ins|col|cam)_[1-9]$" },
+          "hypothesis": { "type": "string", "maxLength": 500 },
+          "segment": { "type": "string", "maxLength": 300 },
+          "proposedCampaign": { "type": "string", "maxLength": 500 },
+          "primaryMetric": { "type": "string", "maxLength": 200 },
+          "measurementPeriodDays": { "type": "integer", "minimum": 1, "maximum": 90 },
+          "successThreshold": { "type": "string", "maxLength": 200 },
+          "thresholdIsProposedDefault": { "type": "boolean" },
+          "ifSuccess": { "type": "string", "maxLength": 300 },
+          "ifFailure": { "type": "string", "maxLength": 300 }
+        }
+      }
+    },
+    "mentionedEntities": {
+      "type": "array", "maxItems": 40,
+      "description": "Every named brand/artist/person/place/media mentioned anywhere in the output. evidenceKey null = not from retrieved evidence.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "evidenceKey"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 200 },
+          "evidenceKey": { "type": ["string", "null"], "pattern": "^ev_[0-9]{3}$" }
+        }
+      }
+    },
+    "limitations": { "type": "array", "maxItems": 8, "items": { "type": "string", "maxLength": 300 } }
+  }
+}

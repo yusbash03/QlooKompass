@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Logs
+*.log
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+*.local.json
+appsettings.*.local.json
+
+# Qloo probe output (never commit real API responses)
+qloo-probe-output/
+
+# Node / frontend (future)
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp

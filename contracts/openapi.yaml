@@ -1,0 +1,728 @@
+openapi: 3.1.0
+info:
+  title: Kulture Compass API
+  version: 1.0.0
+  description: |
+    Evidence-grounded cultural growth planning for small brands. Qloo provides cultural evidence; an LLM interprets it.
+    Source of truth for backend endpoints and frontend generated types. All timestamps are UTC ISO-8601.
+servers:
+  - url: http://localhost:8080
+    description: Local
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: System
+  - name: BusinessProfiles
+  - name: GrowthPlans
+  - name: Evaluations
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/RegisterRequest" } } }
+      responses:
+        "201":
+          description: Account created and signed in. Sets the kc_rt refresh cookie.
+          headers: { Set-Cookie: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/AuthResponse" } } }
+        "400": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LoginRequest" } } }
+      responses:
+        "200":
+          description: Signed in. Sets the kc_rt refresh cookie.
+          headers: { Set-Cookie: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/AuthResponse" } } }
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "423": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshSession
+      security: [ { refreshCookie: [] } ]
+      parameters:
+        - { name: X-Requested-With, in: header, required: true, schema: { type: string, const: kc-web }, description: CSRF guard }
+      responses:
+        "200":
+          description: Rotated. New kc_rt cookie set; previous refresh token revoked.
+          headers: { Set-Cookie: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/AuthResponse" } } }
+        "401": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      parameters:
+        - { name: X-Requested-With, in: header, required: true, schema: { type: string, const: kc-web } }
+      responses:
+        "204": { description: Refresh token family revoked and cookie cleared }
+        "401": { $ref: "#/components/responses/Problem" }
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentUser
+      responses:
+        "200": { description: Current user, content: { application/json: { schema: { $ref: "#/components/schemas/UserDto" } } } }
+        "401": { $ref: "#/components/responses/Problem" }
+
+  /api/v1/health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      security: []
+      responses:
+        "200": { description: Alive, content: { application/json: { schema: { $ref: "#/components/schemas/HealthDto" } } } }
+  /api/v1/health/ready:
+    get:
+      tags: [System]
+      operationId: getReadiness
+      security: []
+      responses:
+        "200": { description: Ready, content: { application/json: { schema: { $ref: "#/components/schemas/HealthDto" } } } }
+        "503": { description: Not ready, content: { application/json: { schema: { $ref: "#/components/schemas/HealthDto" } } } }
+  /api/v1/meta:
+    get:
+      tags: [System]
+      operationId: getMeta
+      security: []
+      responses:
+        "200": { description: App metadata, content: { application/json: { schema: { $ref: "#/components/schemas/MetaDto" } } } }
+  /api/v1/sample-plan:
+    get:
+      tags: [GrowthPlans]
+      operationId: getSamplePlan
+      security: []
+      description: Synthetic, clearly labelled sample plan (isMock=true, isSample=true). Cacheable by the service worker.
+      responses:
+        "200": { description: Sample plan, content: { application/json: { schema: { $ref: "#/components/schemas/GrowthPlanDto" } } } }
+        "503": { $ref: "#/components/responses/Problem" }
+  /api/v1/me/quota:
+    get:
+      tags: [System]
+      operationId: getMyQuota
+      responses:
+        "200": { description: Quota, content: { application/json: { schema: { $ref: "#/components/schemas/QuotaDto" } } } }
+        "401": { $ref: "#/components/responses/Problem" }
+
+  /api/v1/business-profiles:
+    post:
+      tags: [BusinessProfiles]
+      operationId: createBusinessProfile
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BusinessProfileRequest" } } }
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location: { schema: { type: string } }
+            ETag: { schema: { type: string } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/BusinessProfileDto" } } }
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+    get:
+      tags: [BusinessProfiles]
+      operationId: listBusinessProfiles
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200": { description: Page, content: { application/json: { schema: { $ref: "#/components/schemas/BusinessProfileSummaryPage" } } } }
+        "401": { $ref: "#/components/responses/Problem" }
+  /api/v1/business-profiles/{id}:
+    parameters: [ { $ref: "#/components/parameters/Id" } ]
+    get:
+      tags: [BusinessProfiles]
+      operationId: getBusinessProfile
+      responses:
+        "200":
+          description: Profile
+          headers: { ETag: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/BusinessProfileDto" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+    put:
+      tags: [BusinessProfiles]
+      operationId: updateBusinessProfile
+      parameters: [ { $ref: "#/components/parameters/IfMatch" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BusinessProfileRequest" } } }
+      responses:
+        "200":
+          description: Updated
+          headers: { ETag: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/BusinessProfileDto" } } }
+        "400": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }
+        "428": { $ref: "#/components/responses/Problem" }
+
+  /api/v1/growth-plans:
+    post:
+      tags: [GrowthPlans]
+      operationId: startGrowthPlan
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/StartGrowthPlanRequest" } } }
+      responses:
+        "202":
+          description: Accepted (new, or replay of an in-progress request)
+          headers: { Location: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/GrowthPlanAcceptedDto" } } }
+        "200":
+          description: Replay of a request whose plan already reached a terminal state
+          content: { application/json: { schema: { $ref: "#/components/schemas/GrowthPlanAcceptedDto" } } }
+        "400": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+    get:
+      tags: [GrowthPlans]
+      operationId: listGrowthPlans
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - { name: businessProfileId, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/GenerationStatus" } }
+      responses:
+        "200": { description: Page, content: { application/json: { schema: { $ref: "#/components/schemas/GrowthPlanSummaryPage" } } } }
+  /api/v1/growth-plans/{id}:
+    parameters: [ { $ref: "#/components/parameters/Id" } ]
+    get:
+      tags: [GrowthPlans]
+      operationId: getGrowthPlan
+      responses:
+        "200": { description: Plan (content fields null until terminal), content: { application/json: { schema: { $ref: "#/components/schemas/GrowthPlanDto" } } } }
+        "404": { $ref: "#/components/responses/Problem" }
+  /api/v1/growth-plans/{id}/status:
+    parameters: [ { $ref: "#/components/parameters/Id" } ]
+    get:
+      tags: [GrowthPlans]
+      operationId: getGrowthPlanStatus
+      responses:
+        "200": { description: Status, content: { application/json: { schema: { $ref: "#/components/schemas/GrowthPlanStatusDto" } } } }
+        "404": { $ref: "#/components/responses/Problem" }
+  /api/v1/growth-plans/{id}/experiments/{experimentId}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - { name: experimentId, in: path, required: true, schema: { type: string, pattern: "^exp_[1-9]$" } }
+    patch:
+      tags: [GrowthPlans]
+      operationId: updateExperiment
+      description: (Stretch) Record experiment progress/result. Only tracking fields are mutable.
+      parameters: [ { $ref: "#/components/parameters/IfMatch" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UpdateExperimentRequest" } } }
+      responses:
+        "200":
+          description: Updated
+          headers: { ETag: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/ExperimentDto" } } }
+        "400": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }
+        "428": { $ref: "#/components/responses/Problem" }
+
+  /api/v1/evaluations:
+    post:
+      tags: [Evaluations]
+      operationId: startEvaluation
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/StartEvaluationRequest" } } }
+      responses:
+        "202":
+          description: Accepted
+          headers: { Location: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/EvaluationDto" } } }
+        "429": { $ref: "#/components/responses/Problem" }
+        "503": { $ref: "#/components/responses/Problem" }
+  /api/v1/evaluations/{id}:
+    parameters: [ { $ref: "#/components/parameters/Id" } ]
+    get:
+      tags: [Evaluations]
+      operationId: getEvaluation
+      responses:
+        "200": { description: Evaluation, content: { application/json: { schema: { $ref: "#/components/schemas/EvaluationDto" } } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "503": { $ref: "#/components/responses/Problem" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access JWT (HS256, 15 min) issued by /api/v1/auth/*. Owner = `sub`.
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: kc_rt
+      description: Opaque refresh token, HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth. Rotated on every use.
+
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    Page: { name: page, in: query, required: false, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: pageSize, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: string }, description: ETag from the last GET }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }
+
+  responses:
+    Problem:
+      description: Problem Details (RFC 9457)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 256 }
+        password: { type: string, minLength: 10, maxLength: 128, writeOnly: true }
+        displayName: { type: [string, "null"], maxLength: 80 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 256 }
+        password: { type: string, minLength: 1, maxLength: 128, writeOnly: true }
+    UserDto:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+    AuthResponse:
+      type: object
+      required: [accessToken, tokenType, expiresAt, user]
+      properties:
+        accessToken: { type: string, description: Keep in memory only }
+        tokenType: { type: string, const: Bearer }
+        expiresAt: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/UserDto" }
+
+    ProblemDetails:
+      type: object
+      required: [title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: [string, "null"] }
+        instance: { type: [string, "null"] }
+        code:
+          type: string
+          enum: [validation_failed, idempotency_key_missing, unauthenticated, invalid_credentials, refresh_invalid, token_reused,
+                 email_taken, account_locked, not_found, idempotency_key_reused, plan_in_progress,
+                 version_mismatch, precondition_required, payload_too_large, rate_limited, generation_quota_exceeded,
+                 feature_disabled, internal_error]
+        traceId: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+
+    HealthDto:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [Healthy, Degraded, Unhealthy] }
+        checks:
+          type: array
+          items:
+            type: object
+            required: [name, status]
+            properties: { name: { type: string }, status: { type: string } }
+
+    MetaDto:
+      type: object
+      required: [appName, version, qlooMode, llmProvider, isMockMode, features]
+      properties:
+        appName: { type: string, examples: ["Kulture Compass"] }
+        version: { type: string }
+        qlooMode: { type: string, enum: [Live, Mock] }
+        llmProvider: { type: string, enum: [Mock, Gemini, OpenAiCompatible] }
+        isMockMode: { type: boolean, description: true if either Qloo or LLM is mocked }
+        features:
+          type: object
+          required: [evaluationMode, samplePlan, experimentTracking]
+          properties:
+            evaluationMode: { type: boolean }
+            samplePlan: { type: boolean }
+            experimentTracking: { type: boolean }
+
+    QuotaDto:
+      type: object
+      required: [dailyLimit, usedToday, remainingToday, resetsAt]
+      properties:
+        dailyLimit: { type: integer }
+        usedToday: { type: integer }
+        remainingToday: { type: integer }
+        resetsAt: { type: string, format: date-time }
+
+    BusinessCategory: { type: string, enum: [Streetwear, Fashion, Lifestyle, Beauty, FootwearAccessories, Other] }
+    MarketingObjective: { type: string, enum: [Awareness, Engagement, Sales, Launch, Community, Partnerships] }
+    BudgetRange: { type: string, enum: [Under100k, From100kTo500k, From500kTo2m, Over2m, NotSure], description: NGN }
+    ReferenceKindHint: { type: string, enum: [Brand, Artist, Person, Place, Media, Unknown] }
+
+    ReferenceEntityInput:
+      type: object
+      required: [name, kindHint]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        kindHint: { $ref: "#/components/schemas/ReferenceKindHint" }
+
+    BusinessProfileRequest:
+      type: object
+      required: [brandName, category, productsDescription, marketingObjective]
+      properties:
+        brandName: { type: string, minLength: 2, maxLength: 100 }
+        description: { type: [string, "null"], maxLength: 1000 }
+        category: { $ref: "#/components/schemas/BusinessCategory" }
+        categoryOther: { type: [string, "null"], maxLength: 60, description: Required when category = Other }
+        productsDescription: { type: string, minLength: 10, maxLength: 1000 }
+        targetMarket: { type: [string, "null"], maxLength: 200 }
+        primaryLocation: { type: [string, "null"], maxLength: 100, examples: ["Lagos, Nigeria"] }
+        marketingObjective: { $ref: "#/components/schemas/MarketingObjective" }
+        objectiveNotes: { type: [string, "null"], maxLength: 300 }
+        brandIdentity: { type: [string, "null"], maxLength: 500 }
+        referenceEntities:
+          type: array
+          maxItems: 8
+          items: { $ref: "#/components/schemas/ReferenceEntityInput" }
+        budgetRange: { oneOf: [ { $ref: "#/components/schemas/BudgetRange" }, { type: "null" } ] }
+
+    BusinessProfileDto:
+      allOf:
+        - $ref: "#/components/schemas/BusinessProfileRequest"
+        - type: object
+          required: [id, createdAt, updatedAt, version]
+          properties:
+            id: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+            version: { type: string }
+
+    BusinessProfileSummary:
+      type: object
+      required: [id, brandName, category, updatedAt, planCount]
+      properties:
+        id: { type: string, format: uuid }
+        brandName: { type: string }
+        category: { $ref: "#/components/schemas/BusinessCategory" }
+        primaryLocation: { type: [string, "null"] }
+        updatedAt: { type: string, format: date-time }
+        planCount: { type: integer }
+        latestPlanStatus: { oneOf: [ { $ref: "#/components/schemas/GenerationStatus" }, { type: "null" } ] }
+
+    BusinessProfileSummaryPage:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/BusinessProfileSummary" } }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalCount: { type: integer }
+
+    GenerationStatus: { type: string, enum: [Queued, Running, Completed, CompletedWithLimitations, Failed] }
+    GenerationStage:
+      type: string
+      enum: [Queued, InterpretingBrief, PlanningResearch, RetrievingEvidence, EvaluatingEvidence,
+             GeneratingRecommendations, ValidatingOutput, DesigningExperiments, Saving, Done]
+    EvidenceQuality: { type: string, enum: [Strong, Moderate, Weak] }
+    PlanErrorCode:
+      type: string
+      enum: [qloo_unavailable, qloo_auth_failed, qloo_no_evidence, llm_unavailable, llm_quota_exceeded,
+             llm_output_invalid, timeout, internal_error]
+
+    StartGrowthPlanRequest:
+      type: object
+      required: [businessProfileId]
+      properties:
+        businessProfileId: { type: string, format: uuid }
+        options:
+          type: object
+          properties:
+            includeCollaborations: { type: boolean, default: true }
+            includeCampaigns: { type: boolean, default: true }
+            maxCampaigns: { type: integer, minimum: 1, maximum: 3, default: 3 }
+
+    GrowthPlanAcceptedDto:
+      type: object
+      required: [id, status, stage, statusUrl, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/GenerationStatus" }
+        stage: { $ref: "#/components/schemas/GenerationStage" }
+        statusUrl: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    StageLogEntry:
+      type: object
+      required: [stage, state]
+      properties:
+        stage: { $ref: "#/components/schemas/GenerationStage" }
+        state: { type: string, enum: [Pending, Active, Done, Skipped, Failed] }
+        startedAt: { type: [string, "null"], format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+        detail: { type: [string, "null"], maxLength: 200, description: Backend-generated from real counters }
+
+    PlanError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { $ref: "#/components/schemas/PlanErrorCode" }
+        message: { type: string, description: User-safe }
+
+    GrowthPlanStatusDto:
+      type: object
+      required: [id, status, stage, stages, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/GenerationStatus" }
+        stage: { $ref: "#/components/schemas/GenerationStage" }
+        stages: { type: array, items: { $ref: "#/components/schemas/StageLogEntry" } }
+        updatedAt: { type: string, format: date-time }
+        error: { oneOf: [ { $ref: "#/components/schemas/PlanError" }, { type: "null" } ] }
+
+    EvidenceDto:
+      type: object
+      required: [key, qlooEntityId, name, entityType, sourceOperation, sourceSignals, tags, quality, qualityReasons, retrievedAt]
+      properties:
+        key: { type: string, pattern: "^ev_[0-9]{3}$" }
+        qlooEntityId: { type: string }
+        name: { type: string }
+        entityType: { type: string, examples: ["urn:entity:artist"] }
+        subtype: { type: [string, "null"] }
+        sourceOperation: { type: string, enum: [Search, Insights, Tags, Demographics] }
+        sourceSignals: { type: array, items: { type: string } }
+        affinity: { type: [number, "null"], minimum: 0, maximum: 1 }
+        popularity: { type: [number, "null"], minimum: 0, maximum: 1 }
+        tags: { type: array, items: { type: string } }
+        metadata:
+          type: object
+          properties:
+            shortDescription: { type: [string, "null"] }
+            imageUrl: { type: [string, "null"] }
+            externalUrl: { type: [string, "null"] }
+            releaseYear: { type: [integer, "null"] }
+            location: { type: [string, "null"] }
+        quality: { $ref: "#/components/schemas/EvidenceQuality" }
+        qualityReasons: { type: array, items: { type: string } }
+        retrievedAt: { type: string, format: date-time }
+
+    InsightDto:
+      type: object
+      required: [id, title, finding, whyItMatters, evidenceKeys, evidenceStrength, assumptions, limitations]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        finding: { type: string }
+        whyItMatters: { type: string }
+        evidenceKeys: { type: array, items: { type: string } }
+        evidenceStrength: { $ref: "#/components/schemas/EvidenceQuality" }
+        assumptions: { type: array, items: { type: string } }
+        limitations: { type: array, items: { type: string } }
+
+    CollaborationDto:
+      type: object
+      required: [id, partnerEvidenceKey, partnerName, culturalConnection, format, fitRationale, testIdea, evidenceKeys, evidenceStrength, assumptions]
+      properties:
+        id: { type: string }
+        partnerEvidenceKey: { type: string }
+        partnerName: { type: string }
+        culturalConnection: { type: string }
+        format: { type: string }
+        fitRationale: { type: string }
+        testIdea: { type: string }
+        evidenceKeys: { type: array, items: { type: string } }
+        evidenceStrength: { $ref: "#/components/schemas/EvidenceQuality" }
+        assumptions: { type: array, items: { type: string } }
+
+    CampaignDto:
+      type: object
+      required: [id, title, objective, targetHypothesis, culturalInsight, angle, execution, successMetric, effortCategory, evidenceKeys, evidenceStrength, assumptions]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        objective: { type: string }
+        targetHypothesis: { type: string }
+        culturalInsight: { type: string }
+        angle: { type: string }
+        execution: { type: array, items: { type: string } }
+        successMetric: { type: string }
+        effortCategory: { type: string, enum: [Low, Medium, High, Unknown] }
+        evidenceKeys: { type: array, items: { type: string } }
+        evidenceStrength: { $ref: "#/components/schemas/EvidenceQuality" }
+        assumptions: { type: array, items: { type: string } }
+
+    ExperimentStatus: { type: string, enum: [Proposed, Running, Concluded, Abandoned] }
+
+    ExperimentDto:
+      type: object
+      required: [id, linkedRecommendationId, hypothesis, segment, proposedCampaign, primaryMetric, measurementPeriodDays,
+                 successThreshold, thresholdIsProposedDefault, nextDecision, status, version]
+      properties:
+        id: { type: string }
+        linkedRecommendationId: { type: string }
+        hypothesis: { type: string }
+        segment: { type: string }
+        proposedCampaign: { type: string }
+        primaryMetric: { type: string }
+        measurementPeriodDays: { type: integer }
+        successThreshold: { type: string }
+        thresholdIsProposedDefault: { type: boolean }
+        nextDecision:
+          type: object
+          required: [ifSuccess, ifFailure]
+          properties: { ifSuccess: { type: string }, ifFailure: { type: string } }
+        status: { $ref: "#/components/schemas/ExperimentStatus" }
+        observedResult: { type: [string, "null"] }
+        resultNotes: { type: [string, "null"] }
+        version: { type: string }
+
+    UpdateExperimentRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/ExperimentStatus" }
+        observedResult: { type: [string, "null"], maxLength: 200 }
+        resultNotes: { type: [string, "null"], maxLength: 1000 }
+
+    UnlinkedMentionDto:
+      type: object
+      required: [name, note]
+      properties:
+        name: { type: string }
+        note: { type: string, examples: ["AI suggestion — not retrieved from Qloo"] }
+
+    GrowthPlanDto:
+      type: object
+      required: [id, businessProfileId, brandName, status, stage, isMock, isSample, qlooMode, llmProvider, schemaVersion,
+                 promptVersion, briefSnapshot, evidence, insights, collaborations, campaigns, experiments,
+                 unlinkedMentions, limitations, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        businessProfileId: { type: string, format: uuid }
+        brandName: { type: string }
+        status: { $ref: "#/components/schemas/GenerationStatus" }
+        stage: { $ref: "#/components/schemas/GenerationStage" }
+        error: { oneOf: [ { $ref: "#/components/schemas/PlanError" }, { type: "null" } ] }
+        isMock: { type: boolean }
+        isSample: { type: boolean }
+        qlooMode: { type: string, enum: [Live, Mock] }
+        llmProvider: { type: string }
+        llmModel: { type: [string, "null"] }
+        schemaVersion: { type: string }
+        promptVersion: { type: string }
+        briefSnapshot: { $ref: "#/components/schemas/BusinessProfileRequest" }
+        summary:
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [headline, overview]
+              properties: { headline: { type: string }, overview: { type: string } }
+        evidence: { type: array, items: { $ref: "#/components/schemas/EvidenceDto" } }
+        insights: { type: array, items: { $ref: "#/components/schemas/InsightDto" } }
+        collaborations: { type: array, items: { $ref: "#/components/schemas/CollaborationDto" } }
+        campaigns: { type: array, items: { $ref: "#/components/schemas/CampaignDto" } }
+        experiments: { type: array, items: { $ref: "#/components/schemas/ExperimentDto" } }
+        unlinkedMentions: { type: array, items: { $ref: "#/components/schemas/UnlinkedMentionDto" } }
+        limitations: { type: array, items: { type: string } }
+        stats:
+          type: object
+          properties:
+            qlooCalls: { type: integer }
+            llmCalls: { type: integer }
+            evidenceByQuality:
+              type: object
+              properties: { Strong: { type: integer }, Moderate: { type: integer }, Weak: { type: integer } }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+
+    GrowthPlanSummary:
+      type: object
+      required: [id, businessProfileId, brandName, status, isMock, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        businessProfileId: { type: string, format: uuid }
+        brandName: { type: string }
+        status: { $ref: "#/components/schemas/GenerationStatus" }
+        headline: { type: [string, "null"] }
+        isMock: { type: boolean }
+        counts:
+          type: object
+          properties:
+            evidence: { type: integer }
+            insights: { type: integer }
+            collaborations: { type: integer }
+            campaigns: { type: integer }
+            experiments: { type: integer }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+
+    GrowthPlanSummaryPage:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/GrowthPlanSummary" } }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalCount: { type: integer }
+
+    StartEvaluationRequest:
+      type: object
+      required: [businessProfileId]
+      properties:
+        businessProfileId: { type: string, format: uuid }
+
+    EvaluationMetrics:
+      type: object
+      required: [namedEntities, traceableEntities, unsupportedEntities, recommendationsWithEvidencePct, unsupportedNumericClaims, avgEntitiesPerRecommendation, briefTermCoveragePct]
+      properties:
+        namedEntities: { type: integer }
+        traceableEntities: { type: integer }
+        unsupportedEntities: { type: integer }
+        recommendationsWithEvidencePct: { type: [number, "null"] }
+        unsupportedNumericClaims: { type: integer }
+        avgEntitiesPerRecommendation: { type: number }
+        briefTermCoveragePct: { type: number }
+
+    EvaluationDto:
+      type: object
+      required: [id, businessProfileId, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        businessProfileId: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/GenerationStatus" }
+        groundedPlanId: { type: [string, "null"], format: uuid }
+        llmOnlyOutput: { type: [object, "null"], description: Same shape as GrowthPlanDraft (LLM output schema v1.0) without evidence }
+        groundedMetrics: { oneOf: [ { $ref: "#/components/schemas/EvaluationMetrics" }, { type: "null" } ] }
+        llmOnlyMetrics: { oneOf: [ { $ref: "#/components/schemas/EvaluationMetrics" }, { type: "null" } ] }
+        notes: { type: array, items: { type: string }, description: Honest caveats e.g. "LLM-only cannot cite evidence by construction" }
+        error: { oneOf: [ { $ref: "#/components/schemas/PlanError" }, { type: "null" } ] }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
