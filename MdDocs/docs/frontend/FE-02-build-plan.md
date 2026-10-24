@@ -58,6 +58,13 @@ Each slice: implement → `npm run typecheck && npm run lint && npm run test` �
 > user switch never shows previous user's copies.
 **Done:** plan readable offline after toggling; sign-out wipes it.
 
+## FE-6b — Experiments (launch → measure)
+**Prompt:**
+> Implement FE-6b: ExperimentCard actions "Start experiment" and "Record result" (PATCH with If-Match; 412 → reload dialog),
+> concluded card shows observed result next to threshold and highlights the matching decision rule, `/app/experiments` hub
+> (grouped Proposed/Running/Concluded, days remaining for Running) per design §4.10. Tests for transitions and 412.
+**Done:** an experiment can be started and concluded from both the plan and the hub.
+
 ## FE-7 — PWA
 **Prompt:**
 > Implement FE-7: vite-plugin-pwa with manifest and Workbox policy exactly per FE-01 §7 (NetworkOnly for /api except sample-plan/meta),

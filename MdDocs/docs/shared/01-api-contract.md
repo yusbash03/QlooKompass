@@ -37,7 +37,8 @@ it in CI (slice BE-9).
 | GET | `/growth-plans` | user | List own plans (paged, filter `businessProfileId`, `status`) |
 | GET | `/growth-plans/{id}` | user | Full plan (content `null` until terminal state) |
 | GET | `/growth-plans/{id}/status` | user | Lightweight polling payload |
-| PATCH | `/growth-plans/{id}/experiments/{experimentId}` | user | *(stretch)* record experiment status/result (`If-Match`) |
+| PATCH | `/growth-plans/{id}/experiments/{experimentId}` | user | Record experiment status/result — Launch → Measure (`If-Match`) |
+| GET | `/experiments` | user | Experiments hub across all plans (paged, filter `status`) |
 | POST | `/evaluations` | user + flag | Start LLM-only vs grounded comparison → **202** |
 | GET | `/evaluations/{id}` | user + flag | Evaluation result |
 

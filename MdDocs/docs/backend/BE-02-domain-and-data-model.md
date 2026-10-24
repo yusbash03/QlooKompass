@@ -120,8 +120,10 @@ marketing_experiments(
   success_threshold varchar(200) not null, threshold_is_proposed_default boolean not null,
   if_success varchar(300) not null, if_failure varchar(300) not null,
   status varchar(20) not null default 'Proposed', observed_result varchar(200), result_notes varchar(1000),
+  started_at timestamptz, concluded_at timestamptz,
   created_at timestamptz not null, updated_at timestamptz not null)     -- xmin concurrency
   unique (growth_plan_id, exp_id)
+  index ix_experiments_status (status)   -- experiments hub; owner filter via join to growth_plans(owner_id)
 
 evaluation_runs(
   id uuid pk, owner_id varchar(64) not null, business_profile_id uuid fk, grounded_plan_id uuid fk → growth_plans,

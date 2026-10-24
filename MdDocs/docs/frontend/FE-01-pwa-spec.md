@@ -25,7 +25,7 @@ frontend/
       profiles/   ProfileFormPage, ProfileForm, profileSchema.ts, ReferenceEntitiesField, api.ts
       plans/      GeneratePage, ProgressPage, PlanPage (+ tabs), SavedPlansPage, components/*, api.ts
       evidence/   EvidenceChip, EvidenceDrawer, EvidenceTable, QualityPill, ProvenanceLabel, AffinityBar
-      experiments/ ExperimentCard, ExperimentUpdateDialog (stretch)
+      experiments/ ExperimentCard, ExperimentUpdateDialog (start / record result)
       evaluation/ EvaluationPage, MetricsTable, SideBySide
       offline/    offlineStore.ts (IndexedDB per user), MakeAvailableOfflineToggle, OfflinePage
       pwa/        InstallPrompt, useInstallPrompt, UpdatePrompt (registerSW onNeedRefresh), IosInstallInstructions
@@ -46,7 +46,8 @@ frontend/
 | `/app/profiles/:profileId/edit` | user | Edit brief | ETag concurrency |
 | `/app/profiles/:profileId/generate` | user | Review brief + Generate | shows quota; disabled offline |
 | `/app/plans/:planId/progress` | user | Research progress | polling |
-| `/app/plans/:planId` | user | Plan dashboard; tabs via `?tab=overview|insights|collaborations|campaigns|experiments|evidence` | |
+| `/app/plans/:planId` | user | Plan dashboard; tabs via `?tab=overview|insights|partnerships|campaigns|experiments|evidence` (UI label "Partnerships" = API `collaborations`) | |
+| `/app/experiments` | user | Experiments hub (Proposed · Running · Concluded across plans) | launch → measure loop |
 | `/app/evaluate` | user + flag | Evaluation | hidden unless `meta.features.evaluationMode && VITE_ENABLE_EVALUATION` |
 | `/offline` | public | Offline fallback | |
 | `*` | public | 404 | |

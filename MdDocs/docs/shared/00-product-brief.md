@@ -1,5 +1,8 @@
 # 00 — Product Brief
 
+## 0. Core flow
+Landing → (sign in) → business brief → validate → plan research → search Qloo → retrieve insights & affinities → validate & organise evidence → Gemini interprets → generate & validate plan → display results → save → launch experiments → measure results. Full chart: 05-user-stories-and-flows §2.0.
+
 ## 1. One-liner
 **Kulture Compass** turns a small brand's business brief into an evidence-grounded **Cultural Growth Plan**:
 cultural insights, collaboration candidates, campaign concepts and measurable experiments — each traceable
@@ -48,12 +51,12 @@ brief, scored on traceability and unsupported claims — reported honestly.
 - E. Campaign concepts
 - F. Experiment plans
 - G. Save & revisit plans (JWT-authenticated email/password accounts, owner-scoped)
+- I. Experiment tracking: mark an experiment Running (launched by the user outside the app), then record the observed result and decide next step
 - H. Evaluation mode (LLM-only vs grounded) — feature-flagged
 - PWA: installable, app-shell offline, honest offline states, opt-in offline copies of saved plans
 - Public synthetic **sample plan** for judges who don't sign in
 
 ### Stretch
-- Record experiment results (status, observed value, notes)
 - Export plan as PDF/Markdown
 - Compare two plans
 

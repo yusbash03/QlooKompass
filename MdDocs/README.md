@@ -24,6 +24,7 @@ repository and let Claude Code implement the backend and the PWA slice by slice.
 | `docs/shared/02-security-and-config.md` | JWT auth (Identity + refresh rotation), secrets, CORS, rate limits, logging redaction | BE + FE |
 | `docs/shared/03-testing-strategy.md` | Test pyramid, what to test per layer, fixtures policy | BE + FE |
 | `docs/shared/04-deployment-and-demo.md` | Docker, free hosting, judge demo script, final report template | BE + FE |
+| `docs/shared/05-user-stories-and-flows.md` (+ `flows/*.png`) | 33 user stories with acceptance criteria; journey, pipeline, auth, state and offline flow charts | Everyone |
 | `docs/backend/BE-01-architecture.md` | Clean Architecture solution layout, dependency rules, ADRs | BE |
 | `docs/backend/BE-02-domain-and-data-model.md` | Entities, state machine, PostgreSQL schema, indexes | BE |
 | `docs/backend/BE-03-qloo-integration.md` | Qloo contract (known + to-verify), probe procedure, client spec, research planner, evidence-quality rules | BE |

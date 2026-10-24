@@ -98,10 +98,11 @@ type/quality, limitations — no raw names in committed files) is reported.
 > worker completes a plan end-to-end in mock mode.
 **Done when:** `POST → poll → GET` works end-to-end in mock mode via tests and manually via Scalar.
 
-## BE-8 — Experiments tracking (stretch) + Evaluation mode + sample plan
+## BE-8 — Experiment tracking (launch → measure) + Evaluation mode + sample plan
 **Read:** BE-04 §4, openapi Evaluations.
 **Prompt:**
-> Implement BE-8: PATCH experiment (If-Match, only tracking fields), evaluation endpoints behind Features:EvaluationMode
+> Implement BE-8: PATCH experiment (If-Match, only tracking fields; Proposed→Running sets started_at, →Concluded/Abandoned sets
+> concluded_at; illegal transitions → 400), GET /experiments hub (owner-scoped, paged, status filter), evaluation endpoints behind Features:EvaluationMode
 > (grounded plan via pipeline + LLM-only call with llm-only prompt), deterministic `EvaluationScorer` with unit tests, and
 > `/sample-plan` serving an embedded synthetic plan JSON (isMock=true, isSample=true, entity names prefixed "Synthetic ").
 **Done when:** tests green; evaluation runs in mock mode; feature flag off → 503 feature_disabled.
