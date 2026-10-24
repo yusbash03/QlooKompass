@@ -1,0 +1,15 @@
+{
+  "brandName": "Alte Row",
+  "description": "Lagos-based streetwear label blending Afrofuturism with everyday essentials.",
+  "category": "Streetwear",
+  "productsDescription": "Graphic tees, bucket hats, and utility jackets inspired by Lagos street style.",
+  "targetMarket": "Gen Z and young millennial creatives in Lagos",
+  "primaryLocation": "Lagos, Nigeria",
+  "marketingObjective": "Sales",
+  "objectiveNotes": "Launching a new capsule collection next quarter",
+  "referenceEntities": [
+    { "name": "Burna Boy", "kindHint": "Artist" },
+    { "name": "Wizkid", "kindHint": "Artist" },
+    { "name": "Orange Culture", "kindHint": "Brand" }
+  ]
+}
