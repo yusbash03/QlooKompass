@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KultureCompass.Domain\KultureCompass.Domain.csproj" />
+    <ProjectReference Include="..\..\src\KultureCompass.Application\KultureCompass.Application.csproj" />
+    <ProjectReference Include="..\..\src\KultureCompass.Infrastructure\KultureCompass.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\KultureCompass.Api\KultureCompass.Api.csproj" />
+  </ItemGroup>
+
+</Project>

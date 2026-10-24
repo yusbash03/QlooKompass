@@ -1,0 +1,58 @@
+{
+  "_synthetic": true,
+  "success": true,
+  "results": {
+    "entities": [
+      {
+        "entity_id": "synthetic-brand-010",
+        "name": "Synthetic Lagos Streetwear Co",
+        "type": "urn:entity",
+        "subtype": "urn:entity:brand",
+        "disambiguation": "",
+        "properties": { "short_description": "A synthetic streetwear brand for mock-mode insights." },
+        "popularity": 0.74,
+        "query": { "affinity": 0.88 },
+        "tags": [
+          { "tag_id": "urn:tag:keyword:qloo:streetwear", "name": "Streetwear", "type": "urn:tag:keyword:qloo" }
+        ]
+      },
+      {
+        "entity_id": "synthetic-brand-013",
+        "name": "Synthetic Danfo Denim",
+        "type": "urn:entity",
+        "subtype": "urn:entity:brand",
+        "disambiguation": "",
+        "properties": { "short_description": "A synthetic denim brand for mock-mode insights." },
+        "popularity": 0.52,
+        "query": { "affinity": 0.71 },
+        "tags": [
+          { "tag_id": "urn:tag:genre:qloo:afrobeats", "name": "Afrobeats", "type": "urn:tag:genre:qloo" }
+        ]
+      },
+      {
+        "entity_id": "synthetic-brand-014",
+        "name": "Synthetic Third Mainland Studio",
+        "type": "urn:entity",
+        "subtype": "urn:entity:brand",
+        "disambiguation": "",
+        "properties": { "short_description": "A synthetic studio brand for mock-mode insights." },
+        "popularity": 0.33,
+        "query": { "affinity": 0.56 },
+        "tags": []
+      }
+    ]
+  },
+  "query": {
+    "localities": {
+      "filter": [
+        {
+          "entity_id": "synthetic-locality-001",
+          "name": "Synthetic Lagos",
+          "subtype": "urn:entity:locality",
+          "popularity": 0.99,
+          "disambiguation": "Synthetic Lagos, Nigeria"
+        }
+      ]
+    }
+  }
+}

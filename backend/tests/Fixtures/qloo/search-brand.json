@@ -1,0 +1,36 @@
+{
+  "_synthetic": true,
+  "results": [
+    {
+      "entity_id": "synthetic-brand-010",
+      "name": "Synthetic Lagos Streetwear Co",
+      "types": ["urn:entity:brand"],
+      "disambiguation": "",
+      "properties": { "short_description": "A synthetic streetwear brand used for mock-mode testing." },
+      "popularity": 0.74,
+      "tags": [
+        { "tag_id": "urn:tag:keyword:qloo:streetwear", "name": "Streetwear", "type": "urn:tag:keyword:qloo" }
+      ]
+    },
+    {
+      "entity_id": "synthetic-brand-011",
+      "name": "Synthetic Okada Supply Co",
+      "types": ["urn:entity:brand"],
+      "disambiguation": "",
+      "properties": { "short_description": "A synthetic lifestyle brand used for mock-mode testing." },
+      "popularity": 0.58,
+      "tags": [
+        { "tag_id": "urn:tag:keyword:qloo:streetwear", "name": "Streetwear", "type": "urn:tag:keyword:qloo" }
+      ]
+    },
+    {
+      "entity_id": "synthetic-brand-012",
+      "name": "Synthetic Nova Footwear",
+      "types": ["urn:entity:brand"],
+      "disambiguation": "",
+      "properties": { "short_description": "A synthetic footwear brand used for mock-mode testing." },
+      "popularity": 0.39,
+      "tags": []
+    }
+  ]
+}

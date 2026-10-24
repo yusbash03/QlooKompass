@@ -1,0 +1,12 @@
+{
+  "_synthetic": true,
+  "duration": 1,
+  "success": true,
+  "results": {
+    "tags": [
+      { "id": "urn:tag:keyword:qloo:streetwear", "name": "Streetwear", "type": "urn:tag:keyword:qloo", "popularity": 0.58, "properties": {}, "tags": [] },
+      { "id": "urn:tag:genre:qloo:afrobeats", "name": "Afrobeats", "type": "urn:tag:genre:qloo", "popularity": 0.71, "properties": {}, "tags": [] },
+      { "id": "urn:tag:genre:qloo:alte", "name": "Alté", "type": "urn:tag:genre:qloo", "popularity": 0.33, "properties": {}, "tags": [] }
+    ]
+  }
+}

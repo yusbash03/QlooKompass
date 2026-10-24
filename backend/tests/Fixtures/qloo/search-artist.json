@@ -1,0 +1,38 @@
+{
+  "_synthetic": true,
+  "results": [
+    {
+      "entity_id": "synthetic-artist-001",
+      "name": "Synthetic Afrobeat Star",
+      "types": ["urn:entity:artist"],
+      "disambiguation": "",
+      "properties": { "short_description": "A synthetic Afrobeats artist used for mock-mode testing." },
+      "popularity": 0.82,
+      "tags": [
+        { "tag_id": "urn:tag:genre:qloo:afrobeats", "name": "Afrobeats", "type": "urn:tag:genre:qloo" }
+      ]
+    },
+    {
+      "entity_id": "synthetic-artist-002",
+      "name": "Synthetic Alte Collective",
+      "types": ["urn:entity:artist"],
+      "disambiguation": "",
+      "properties": { "short_description": "A synthetic alté-scene artist used for mock-mode testing." },
+      "popularity": 0.61,
+      "tags": [
+        { "tag_id": "urn:tag:genre:qloo:alte", "name": "Alté", "type": "urn:tag:genre:qloo" }
+      ]
+    },
+    {
+      "entity_id": "synthetic-artist-003",
+      "name": "Synthetic Lagos Sound System",
+      "types": ["urn:entity:artist"],
+      "disambiguation": "",
+      "properties": { "short_description": "A synthetic artist representing Lagos nightlife culture." },
+      "popularity": 0.47,
+      "tags": [
+        { "tag_id": "urn:tag:genre:qloo:afrobeats", "name": "Afrobeats", "type": "urn:tag:genre:qloo" }
+      ]
+    }
+  ]
+}
