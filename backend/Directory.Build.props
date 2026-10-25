@@ -18,7 +18,7 @@
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) or $(MSBuildProjectName.EndsWith('Tests'))">
     <IsPackable>false</IsPackable>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);CA1707</NoWarn>
+    <NoWarn>$(NoWarn);CA1707;CA1711</NoWarn> <!-- CA1711: xUnit "…Collection" fixture naming convention -->
   </PropertyGroup>
 
 </Project>

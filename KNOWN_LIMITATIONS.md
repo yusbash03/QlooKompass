@@ -11,8 +11,10 @@ Started in BE-5; BE-10 completes this file. Each item says what is missing and w
 - **No cleanup job for refresh tokens yet** (02-security §1 "daily background job"). Expired or revoked rows
   pile up in `refresh_tokens`. They're never accepted, so this costs storage only.
 - **Rate limiting:** all 02-security §5 policies exist (`global`, `generation`, `public`, `auth`, `auth-refresh`).
-  Behind a reverse proxy the client IP needs forwarded-headers config (BE-9); until then all anonymous proxied
-  traffic shares one IP bucket. Signed-in traffic is partitioned per user.
+  Behind a reverse proxy, set `App:TrustForwardedHeaders=true` so per-IP limits see the real client IP. Otherwise
+  all anonymous proxied traffic shares the proxy's IP bucket. Signed-in traffic is partitioned per user.
+- **HTTPS redirect needs a known port** (`ASPNETCORE_HTTPS_PORT`). Without one, ASP.NET logs a warning and doesn't
+  redirect. Set `App:EnforceHttps=false` when TLS terminates at a proxy that already redirects.
 - **The 429 rate-limit response is unverified by tests.** It's configured, but the tests raise the limits so
   they don't trip it.
 

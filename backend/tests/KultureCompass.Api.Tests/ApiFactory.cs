@@ -51,6 +51,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("RateLimiting:GenerationPerMinute", "10000");
         builder.UseSetting("RateLimiting:PublicPerMinute", "10000");
         builder.UseSetting("Generation:DailyLimitPerUser", "50");
+        builder.UseSetting("App:EnforceHttps", "false"); // TestServer speaks plain HTTP; HSTS/redirect covered in HardeningTests
     }
 
     public async Task InitializeAsync()

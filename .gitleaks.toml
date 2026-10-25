@@ -1,0 +1,37 @@
+# gitleaks config (BE-9). Extends the default ruleset; the allowlist covers only documented, non-secret values.
+title = "Kulture Compass"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders and synthetic test values — none of these protect anything."
+regexes = [
+  # appsettings.json local-dev JWT key: refused in Production by startup guard (JwtOptions.KnownPlaceholderKeys).
+  '''z7MfgP71HDHTQiNagjq5rfDbG/3New6hjqz7RqYMicDkQCtqR7QLGrJynJc5aGOb''',
+  # .env.example placeholders.
+  '''replace-me''',
+  '''replace-with-openssl-rand-base64-48''',
+  # Hand-written test values (tests never use real keys).
+  '''synthetic-[a-z0-9-]*key[a-zA-Z0-9-]*''',
+  '''Synthetic-Passw0rd''',
+  # Example Idempotency-Key UUID in docs/shared/01-api-contract.md §3.1 (an idempotency key is not a secret).
+  '''3f6c1d0e-7b0a-4c51-9a0b-2b7f8e0c9a11''',
+]
+paths = [
+  # Generated/third-party output that is never committed but may exist locally.
+  '''(^|/)(bin|obj|node_modules|qloo-probe-output)/''',
+]
+
+# Key formats the default ruleset misses (found by a BE-9 canary test).
+[[rules]]
+id = "qloo-hackathon-api-key"
+description = "Qloo hackathon API key (hack_ + 40 hex)"
+regex = '''\bhack_[0-9a-f]{40}\b'''
+keywords = ["hack_"]
+
+[[rules]]
+id = "google-ai-studio-key-aq"
+description = "Google AI Studio / Gemini API key, newer AQ. format"
+regex = '''\bAQ\.[A-Za-z0-9_-]{40,}'''
+keywords = ["AQ."]

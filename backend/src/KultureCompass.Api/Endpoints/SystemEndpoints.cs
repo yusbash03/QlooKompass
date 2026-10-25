@@ -1,7 +1,5 @@
-using System.Text.Json;
 using KultureCompass.Infrastructure.Configuration;
 using KultureCompass.Infrastructure.Qloo;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
@@ -9,20 +7,32 @@ namespace KultureCompass.Api.Endpoints;
 
 public static class SystemEndpoints
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
     public static void MapSystemEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1");
 
-        group.MapGet("/health", () => Results.Ok(new HealthDto("Healthy", [])))
+        group.MapGet("/health", () => TypedResults.Ok(new HealthDto("Healthy", [])))
+            .WithTags("System")
             .WithName("getHealth")
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .Produces<HealthDto>();
 
-        group.MapHealthChecks("/health/ready", new HealthCheckOptions
-        {
-            ResponseWriter = WriteHealthResponse,
-        }).AllowAnonymous();
+        // A normal endpoint (not MapHealthChecks) so it appears in the OpenAPI document like the contract says.
+        group.MapGet("/health/ready", async (HealthCheckService health, CancellationToken ct) =>
+            {
+                var report = await health.CheckHealthAsync(ct);
+                var dto = new HealthDto(
+                    report.Status switch { HealthStatus.Healthy => "Healthy", HealthStatus.Degraded => "Degraded", _ => "Unhealthy" },
+                    [.. report.Entries.Select(e => new HealthCheckDto(e.Key, e.Value.Status.ToString()))]);
+                return report.Status == HealthStatus.Healthy
+                    ? Results.Ok(dto)
+                    : Results.Json(dto, statusCode: StatusCodes.Status503ServiceUnavailable);
+            })
+            .WithTags("System")
+            .WithName("getReadiness")
+            .AllowAnonymous()
+            .Produces<HealthDto>()
+            .Produces<HealthDto>(StatusCodes.Status503ServiceUnavailable);
 
         group.MapGet("/meta", (IOptions<QlooOptions> qloo, IOptions<LlmOptions> llm, IOptions<FeatureOptions> features) =>
         {
@@ -37,23 +47,11 @@ public static class SystemEndpoints
                 Features: new FeatureFlagsDto(features.Value.EvaluationMode, features.Value.SamplePlan, features.Value.ExperimentTracking));
             return Results.Ok(meta);
         })
+            .WithTags("System")
             .WithName("getMeta")
             .AllowAnonymous()
+            .Produces<MetaDto>()
             .RequireRateLimiting(Auth.AuthServiceCollectionExtensions.PublicRateLimitPolicy);
-    }
-
-    private static async Task WriteHealthResponse(HttpContext context, HealthReport report)
-    {
-        context.Response.ContentType = "application/json";
-        var status = report.Status switch
-        {
-            HealthStatus.Healthy => "Healthy",
-            HealthStatus.Degraded => "Degraded",
-            _ => "Unhealthy",
-        };
-        var checks = report.Entries.Select(e => new HealthCheckDto(e.Key, e.Value.Status.ToString())).ToArray();
-        context.Response.StatusCode = report.Status == HealthStatus.Healthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
-        await context.Response.WriteAsync(JsonSerializer.Serialize(new HealthDto(status, checks), JsonOptions));
     }
 }
 

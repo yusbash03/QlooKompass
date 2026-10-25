@@ -215,6 +215,8 @@ public class OpenAiCompatibleLlmClientTests
 
 public class MockLlmClientTests
 {
+    private static readonly System.Text.Json.JsonSerializerOptions WebJson = new(System.Text.Json.JsonSerializerDefaults.Web);
+
     private static MockLlmClient Mock(MockLlmScenario scenario = MockLlmScenario.Valid) =>
         new(Options.Create(new LlmOptions { MockScenario = scenario.ToString() }));
 
@@ -238,7 +240,7 @@ public class MockLlmClientTests
         result.Json.ShouldContain("[MOCK]");
         var keys = System.Text.RegularExpressions.Regex.Matches(result.Json, "ev_\\d{3}").Select(m => m.Value).Distinct();
         keys.ShouldBeSubsetOf(["ev_001", "ev_002", "ev_003"]);
-        var draft = System.Text.Json.JsonSerializer.Deserialize<GrowthPlanDraft>(result.Json, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!;
+        var draft = System.Text.Json.JsonSerializer.Deserialize<GrowthPlanDraft>(result.Json, WebJson)!;
         draft.Collaborations!.ShouldAllBe(c => c.PartnerEvidenceKey != "ev_003"); // a tag is never a partner
         draft.Insights!.Count.ShouldBe(3);
     }

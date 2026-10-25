@@ -12,6 +12,7 @@ using KultureCompass.Infrastructure.Generation;
 using KultureCompass.Infrastructure.Identity;
 using KultureCompass.Infrastructure.Llm;
 using KultureCompass.Infrastructure.Persistence;
+using Microsoft.AspNetCore.HttpOverrides;
 using KultureCompass.Infrastructure.Qloo;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -79,9 +80,23 @@ try
             $"Jwt:SigningKey must be base64 encoding at least {JwtOptions.MinSigningKeyBytes} random bytes (openssl rand -base64 48).")
         .Validate(o => !isProduction || !JwtOptions.KnownPlaceholderKeys.Contains(o.SigningKey),
             "Jwt:SigningKey is a committed placeholder; set a real key via env/secret store in Production.")
+        .Validate(o => !isProduction || o.CookieSecure, "Jwt:CookieSecure must be true in Production (refresh cookie over HTTPS only).")
         .ValidateOnStart();
 
     var appOptions = builder.Configuration.GetSection(AppOptions.SectionName).Get<AppOptions>() ?? new AppOptions();
+
+    // 02-security §6: 64 KB request bodies; larger → 413 payload_too_large.
+    builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = appOptions.MaxRequestBodyBytes);
+
+    if (appOptions.TrustForwardedHeaders)
+    {
+        builder.Services.Configure<ForwardedHeadersOptions>(o =>
+        {
+            o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            o.KnownIPNetworks.Clear(); // the only route in is the trusted proxy (see AppOptions.TrustForwardedHeaders)
+            o.KnownProxies.Clear();
+        });
+    }
     const string corsPolicyName = "SiblingSubdomain";
     builder.Services.AddCors(options => options.AddPolicy(corsPolicyName, policy =>
     {
@@ -141,9 +156,19 @@ try
         await SeedDemoUserAsync(app);
     }
 
+    if (appOptions.TrustForwardedHeaders)
+        app.UseForwardedHeaders();
+
     app.UseExceptionHandler();
     app.UseStatusCodePages();
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+        if (appOptions.EnforceHttps)
+            app.UseHttpsRedirection();
+    }
     app.UseSecurityHeaders();
+    app.UseMiddleware<RequestBodyLimitMiddleware>();
     app.UseCors(corsPolicyName);
     app.UseAuthentication();
     app.UseRateLimiter();

@@ -16,6 +16,8 @@ public static class QlooServiceCollectionExtensions
         services.AddOptions<QlooOptions>()
             .Bind(configuration.GetSection(QlooOptions.SectionName))
             .ValidateDataAnnotations()
+            .Validate(o => o.Mode != QlooMode.Live || !string.IsNullOrWhiteSpace(o.ApiKey),
+                "Qloo:ApiKey is required when Qloo:Mode is Live (set it via user-secrets or env, never appsettings).")
             .ValidateOnStart();
 
         var qlooOptions = configuration.GetSection(QlooOptions.SectionName).Get<QlooOptions>() ?? new QlooOptions();

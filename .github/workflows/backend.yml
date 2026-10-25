@@ -1,0 +1,74 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", "contracts/**", "scripts/openapi-drift.py", ".github/workflows/backend.yml"]
+  pull_request:
+    paths: ["backend/**", "contracts/**", "scripts/openapi-drift.py", ".github/workflows/backend.yml"]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restore
+        run: dotnet restore backend/KultureCompass.sln
+      - name: Build (warnings are errors)
+        run: dotnet build backend/KultureCompass.sln -c Release --no-restore
+      # Infrastructure/Api tests start their own Postgres via Testcontainers (Docker is available on ubuntu runners).
+      # Live tests are excluded: no provider keys exist in CI, by design.
+      - name: Test (non-Live)
+        run: dotnet test backend/KultureCompass.sln -c Release --no-build --filter "Category!=Live"
+
+  migrations-and-openapi-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: kc
+          POSTGRES_PASSWORD: kc
+          POSTGRES_DB: kulture_compass
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U kc" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: Host=localhost;Port=5432;Database=kulture_compass;Username=kc;Password=kc
+      Qloo__Mode: Mock
+      Llm__Provider: Mock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build API
+        run: dotnet build backend/src/KultureCompass.Api -c Release
+      - name: Apply migrations to a fresh database
+        run: dotnet run --project backend/src/KultureCompass.Api -c Release --no-build --no-launch-profile -- --migrate
+      - name: Start API and wait for readiness
+        run: |
+          ASPNETCORE_URLS=http://127.0.0.1:8080 dotnet run --project backend/src/KultureCompass.Api -c Release --no-build --no-launch-profile > api.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/api/v1/health/ready && exit 0; sleep 1; done
+          cat api.log; exit 1
+      - name: OpenAPI drift check
+        run: |
+          pip install pyyaml==6.0.2
+          curl -sf http://127.0.0.1:8080/openapi/v1.json -o openapi.generated.json
+          python scripts/openapi-drift.py openapi.generated.json contracts/openapi.yaml

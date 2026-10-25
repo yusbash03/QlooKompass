@@ -273,7 +273,7 @@ public class OutputValidatorTests
 
         result.IsValid.ShouldBeTrue();
         result.Warnings.ShouldContain(w => w.StartsWith("ins_1 contains figures"));
-        result.Draft!.Insights![0].Assumptions.ShouldContain(OutputValidator.IllustrativeFiguresAssumption);
+        result.Draft!.Insights![0].Assumptions.ShouldNotBeNull().ShouldContain(OutputValidator.IllustrativeFiguresAssumption);
     }
 
     [Fact]
