@@ -7,7 +7,7 @@ namespace KultureCompass.Infrastructure.Qloo;
 internal static class QlooMapper
 {
     public static QlooEntity ToEntity(QlooEntityDto dto) => new(
-        Id: dto.EntityId ?? string.Empty,
+        Id: dto.EntityId ?? dto.TagId ?? string.Empty,
         Name: dto.Name ?? string.Empty,
         Type: ResolveType(dto),
         // Qloo's "subtype" is the real entity type (folded into Type above), not a finer-grained classification —
@@ -37,6 +37,10 @@ internal static class QlooMapper
 
     public static IReadOnlyList<QlooEntity> ToEntities(IReadOnlyList<QlooEntityDto>? dtos) =>
         dtos?.Select(ToEntity).ToList() ?? (IReadOnlyList<QlooEntity>)[];
+
+    /// <summary>Insights items regardless of filter type: entities (entity filter types) and tags (urn:tag).</summary>
+    public static IReadOnlyList<QlooEntity> ToInsightsItems(InsightsResultsDto? results) =>
+        [.. ToEntities(results?.Entities), .. ToEntities(results?.Tags)];
 
     public static IReadOnlyList<QlooTag> ToTags(IReadOnlyList<QlooTagDto>? dtos) =>
         dtos?.Select(ToTag).ToList() ?? (IReadOnlyList<QlooTag>)[];

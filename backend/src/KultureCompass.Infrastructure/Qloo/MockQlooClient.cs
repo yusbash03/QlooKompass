@@ -32,8 +32,10 @@ public sealed class MockQlooClient : IQlooClient
 
     public Task<QlooResult<InsightsResponse>> GetInsightsAsync(InsightsRequest request, CancellationToken ct)
     {
-        var envelope = Load<InsightsEnvelopeDto>("insights-brand-from-artist.json");
-        var entities = QlooMapper.ToEntities(envelope.Results?.Entities).Take(Math.Max(1, request.Take)).ToList();
+        var envelope = Load<InsightsEnvelopeDto>(request.FilterType == QlooEntityType.Tag
+            ? "insights-tags-from-artist.json"
+            : "insights-brand-from-artist.json");
+        var entities = QlooMapper.ToInsightsItems(envelope.Results).Take(Math.Max(1, request.Take)).ToList();
         var localities = QlooMapper.ToLocalities(envelope.Query);
         return Task.FromResult(QlooResult<InsightsResponse>.Ok(new InsightsResponse(entities, localities), MockMeta));
     }

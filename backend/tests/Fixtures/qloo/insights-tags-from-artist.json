@@ -1,0 +1,35 @@
+{
+  "_synthetic": true,
+  "success": true,
+  "results": {
+    "tags": [
+      {
+        "tag_id": "urn:tag:keyword:qloo:synthetic_street_culture",
+        "name": "Synthetic Street Culture",
+        "types": ["urn:tag:keyword:qloo"],
+        "subtype": "urn:tag:keyword:qloo",
+        "tag_value": "urn:tag:keyword:qloo:synthetic_street_culture",
+        "popularity": 0.61,
+        "query": { "affinity": 0.84 }
+      },
+      {
+        "tag_id": "urn:tag:genre:qloo:synthetic_alte",
+        "name": "Synthetic Alte Sound",
+        "types": ["urn:tag:genre:qloo"],
+        "subtype": "urn:tag:genre:qloo",
+        "tag_value": "urn:tag:genre:qloo:synthetic_alte",
+        "popularity": 0.47,
+        "query": { "affinity": 0.69 }
+      },
+      {
+        "tag_id": "urn:tag:keyword:qloo:synthetic_nightlife",
+        "name": "Synthetic Nightlife",
+        "types": ["urn:tag:keyword:qloo"],
+        "subtype": "urn:tag:keyword:qloo",
+        "tag_value": "urn:tag:keyword:qloo:synthetic_nightlife",
+        "popularity": 0.38,
+        "query": { "affinity": 0.52 }
+      }
+    ]
+  }
+}

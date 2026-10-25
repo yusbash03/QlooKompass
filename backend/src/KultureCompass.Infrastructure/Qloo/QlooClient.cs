@@ -44,7 +44,7 @@ public sealed class QlooClient(HttpClient httpClient) : IQlooClient
 
         return await SendAsync<InsightsEnvelopeDto, InsightsResponse>(
             path,
-            dto => new InsightsResponse(QlooMapper.ToEntities(dto.Results?.Entities), QlooMapper.ToLocalities(dto.Query)),
+            dto => new InsightsResponse(QlooMapper.ToInsightsItems(dto.Results), QlooMapper.ToLocalities(dto.Query)),
             ct)
             .ConfigureAwait(false);
     }

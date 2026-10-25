@@ -76,10 +76,32 @@ turn on.
 - Nigerian coverage: strong for artists/brands/people/places in this one real run (Lagos hotels resolved
   correctly via R7); not a systematic measurement across many queries.
 
-## 6. Remaining open items
+## 6. Cross-check against the official hackathon developer guide (2026-10-25)
 
-- R5 cultural-themes (`urn:tag` filter type) returning empty in the one live run above — worth another look before
-  relying on it.
+Source: https://docs.qloo.com/reference/qloo-llm-hackathon-developer-guide. Each point that differed from our
+contract was re-tested live; **live behaviour wins** where the two disagree.
+
+| Guide says | Live result | Action |
+|---|---|---|
+| Only `https://hackathon.api.qloo.com` works with hackathon keys; auth via `X-Api-Key` only (no Bearer, no query param) | Matches §1 | none |
+| Endpoints: `/v2/insights`, `/search`, `/v2/tags` (all GET). `/recommendations`, `/recs`, `/v2/insights/search` unsupported | Matches — we use only these three | none |
+| `filter.type` allowed list includes `urn:entity:video_game` | **`urn:entity:video_game` → 400** "not supported for filter.type" on insights and `/search`; `urn:entity:videogame` → 200 | keep `videogame` (no underscore); guide is wrong here |
+| `urn:tag` / `urn:demographics` not in the guide's `filter.type` list | Both → 200 with a seed entity signal | none (demographics still gated, §3) |
+| Unsupported `filter.type` → 403 | Unsupported spelling observed as 400 (above); 403 not reproduced | `QlooClient` maps both to non-retried failures already |
+| Invalid params are **silently dropped**; empty results can mean bad params *or* no data | — | treat empty results as a limitation, never as "no cultural signal" |
+| Private server-side caching allowed, no time limit; never store responses in a public repo | — | `Qloo:CacheTtlMinutes>0` is permitted; default stays 0, no-real-responses-in-Git rule unchanged |
+| No numeric rate limits published | Headers show 10 rps / 50k per month on this key (§1) | keep `MaxRequestsPerSecond=4` |
+
+**R5 fix (found during this cross-check):** `filter.type=urn:tag` insights return items under
+**`results.tags[]`** (not `results.entities[]`), each keyed by `tag_id` with the tag type in `subtype`
+(e.g. `urn:tag:keyword:qloo`) plus `types[]`, `popularity`, `query.affinity`, `tag_value`. The client only read
+`entities[]`, which is why R5 was empty in §5. `InsightsResultsDto` now also reads `tags[]` and
+`QlooMapper.ToInsightsItems` merges both. Re-run of the live Lagos research after the fix: 11/12 calls,
+60 evidence items (cap) — 10 each of artist/brand/person/place/podcast plus 10 `urn:tag:keyword:qloo` themes,
+all Strong, no limitations.
+
+## 7. Remaining open items
+
 - Error response **bodies** beyond status code (e.g. the exact 401/400 JSON shape) are known from this probe but
   not parsed by `QlooClient` — it still maps on HTTP status only, which is sufficient for `QlooErrorKind` but
   discards the server's specific message.

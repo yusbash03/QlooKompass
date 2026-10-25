@@ -54,6 +54,22 @@ public class QlooClientTests
     }
 
     [Fact]
+    public async Task GetInsightsAsync_maps_tag_results_for_urn_tag_filter_type()
+    {
+        var json = """{"results":{"tags":[{"tag_id":"urn:tag:keyword:qloo:synthetic_theme","name":"Synthetic Theme","types":["urn:tag:keyword:qloo"],"subtype":"urn:tag:keyword:qloo","popularity":0.5,"query":{"affinity":0.8}}]}}""";
+        var fake = new FakeHttpMessageHandler().Enqueue(JsonResponse(HttpStatusCode.OK, json));
+        var sut = BuildClient(fake);
+
+        var result = await sut.GetInsightsAsync(
+            new InsightsRequest { FilterType = QlooEntityType.Tag, SeedEntityIds = ["synthetic-artist-001"] }, CancellationToken.None);
+
+        var item = result.ShouldBeOfType<QlooResult<InsightsResponse>.Success>().Value.Entities.Single();
+        item.Id.ShouldBe("urn:tag:keyword:qloo:synthetic_theme");
+        item.Type.ShouldBe("urn:tag:keyword:qloo");
+        item.Affinity.ShouldBe(0.8);
+    }
+
+    [Fact]
     public async Task Unauthorized_maps_to_AuthFailed_and_is_not_retried()
     {
         var fake = new FakeHttpMessageHandler().Enqueue(new HttpResponseMessage(HttpStatusCode.Unauthorized));

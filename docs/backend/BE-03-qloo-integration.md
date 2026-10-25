@@ -27,7 +27,7 @@ Legend: ✅ provided by organisers · 🟡 observed by other hackathon teams (pu
 | Paging | `take` confirmed; `page` not probed | 🟡 |
 | Demographics/audiences | `filter.type=urn:demographics` responds `200` but is **not entity-shaped** (`results.demographics[].query.{age,gender}` score buckets) - feature stays off, needs dedicated handling | ✅ shape, not yet implemented |
 | Response shape | **Different per endpoint** - see qloo-verified-contract.md. `/search`: flat `results[]` array, type in `types[]`. `/v2/insights`: `results.entities[]`, real type in `subtype` (`type` is always the generic literal `"urn:entity"`). | ✅ |
-| Terms | Publishing response data forbidden (reported) | ✅ honoured — no real responses in Git; cache off by default |
+| Terms | Publishing response data forbidden; private server-side caching allowed with no time limit (hackathon guide) | ✅ honoured — no real responses in Git; cache off by default but permitted |
 | Nigerian coverage | Strong for artists/brands/people/places in one real run (Lagos hotels resolved correctly via location-filtered insights) | 🟡 - one data point, not a systematic measurement |
 
 ## 2. Slice BE-0 — Probe procedure (run on your machine)

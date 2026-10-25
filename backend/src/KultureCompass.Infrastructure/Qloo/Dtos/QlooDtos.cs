@@ -30,9 +30,12 @@ internal sealed record QlooQueryInfoDto(double? Affinity);
 /// <summary>Entity shape also differs by context:
 /// - /search: no "type"/"subtype" pair at all — the real type is the first entry of the "types" array.
 /// - /v2/insights: "type" is always the generic literal "urn:entity"; the real type lives in "subtype"
-///   (e.g. "urn:entity:brand"). <see cref="QlooMapper.ResolveType"/> picks the right one regardless of source.</summary>
+///   (e.g. "urn:entity:brand"). <see cref="QlooMapper.ResolveType"/> picks the right one regardless of source.
+/// - /v2/insights with filter.type=urn:tag: items arrive under results.tags[] keyed by "tag_id" (no "entity_id"),
+///   with the tag type in "subtype" (e.g. "urn:tag:keyword:qloo") — live-verified, so they reuse this DTO.</summary>
 internal sealed record QlooEntityDto(
     string? EntityId,
+    string? TagId,
     string? Name,
     string? Type,
     string? Subtype,
@@ -58,6 +61,7 @@ internal sealed record TagsResultsDto(IReadOnlyList<QlooTagDto>? Tags);
 
 internal sealed record TagsEnvelopeDto(TagsResultsDto? Results);
 
-internal sealed record InsightsResultsDto(IReadOnlyList<QlooEntityDto>? Entities);
+/// <summary>Entity filter types return results.entities[]; filter.type=urn:tag returns results.tags[] instead.</summary>
+internal sealed record InsightsResultsDto(IReadOnlyList<QlooEntityDto>? Entities, IReadOnlyList<QlooEntityDto>? Tags);
 
 internal sealed record InsightsEnvelopeDto(InsightsResultsDto? Results, QlooTopLevelQueryDto? Query);
