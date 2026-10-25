@@ -19,6 +19,9 @@ public sealed class GrowthPlanStore(AppDbContext db) : IGrowthPlanStore
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == ownerId, ct);
 
+    public Task<GrowthPlan?> GetForProcessingAsync(Guid id, CancellationToken ct) =>
+        db.GrowthPlans.AsSplitQuery().FirstOrDefaultAsync(p => p.Id == id, ct);
+
     public Task<GrowthPlan?> GetByIdempotencyKeyAsync(string ownerId, string idempotencyKey, CancellationToken ct) =>
         db.GrowthPlans.FirstOrDefaultAsync(p => p.OwnerId == ownerId && p.IdempotencyKey == idempotencyKey, ct);
 

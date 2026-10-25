@@ -76,7 +76,9 @@ public abstract record LlmResult { Success(string Json, LlmUsage? Usage) | Failu
 - Body: `systemInstruction.parts[0].text`, `contents[0] = {role:"user", parts:[{text}]}`,
   `generationConfig = { responseMimeType:"application/json", responseJsonSchema:<schema>, maxOutputTokens, temperature }`.
   If `responseJsonSchema` is rejected by the chosen model, fall back to `responseSchema` (OpenAPI subset — strip unsupported
-  keywords) and rely on server-side validation. **Verify against current Gemini docs in slice BE-6.**
+  keywords) and rely on server-side validation. **Verified in BE-6 — see `docs/backend/llm-verified-contract.md`:**
+  `responseJsonSchema` works, but the full v1.0 schema exceeds Gemini's complexity limit; the client retries once
+  with array `minItems`/`maxItems` stripped (still `responseJsonSchema`) instead of switching to `responseSchema`.
 - Response: `candidates[0].content.parts[*].text` concatenated; `finishReason` `MAX_TOKENS` → `Truncated`; `SAFETY` → `Refused`;
   `usageMetadata.{promptTokenCount,candidatesTokenCount}` → `LlmUsage`.
 - 429 → `QuotaExceeded` if body mentions quota/`RESOURCE_EXHAUSTED` per-day, else `RateLimited` (retry once honouring

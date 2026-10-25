@@ -1,5 +1,6 @@
 using FluentValidation;
 using KultureCompass.Application.Auth;
+using KultureCompass.Application.Generation;
 using KultureCompass.Application.Profiles;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +26,12 @@ public static class DependencyInjection
         services.AddScoped<GetProfileHandler>();
         services.AddScoped<ListProfilesHandler>();
         services.AddScoped<UpdateProfileHandler>();
+
+        // Generation pipeline (BE-6). ResearchPlanner, ICulturalIntelligenceService and GrowthPlanPipelineSettings
+        // depend on host config and are registered by the composition root.
+        services.AddScoped<BriefInterpreter>();
+        services.AddScoped<RecommendationSynthesizer>();
+        services.AddScoped<GrowthPlanPipeline>();
 
         return services;
     }

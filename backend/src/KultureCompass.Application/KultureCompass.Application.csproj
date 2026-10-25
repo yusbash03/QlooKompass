@@ -10,6 +10,18 @@
     <PackageReference Include="Microsoft.Extensions.Options" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- BE-04 §3: versioned prompts + response schemas. The synthesis schema is linked from contracts/ so the LLM,
+         the validator and the frontend all share one file. -->
+    <EmbeddedResource Include="Generation\Prompts\*.md" LogicalName="Prompts.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Generation\Schemas\*.json" LogicalName="Schemas.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\..\contracts\growth-plan-llm-output.schema.json" LogicalName="Schemas.growth-plan-llm-output.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KultureCompass.Application.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

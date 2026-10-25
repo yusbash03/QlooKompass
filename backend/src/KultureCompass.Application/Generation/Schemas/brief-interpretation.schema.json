@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["category", "productThemes", "aestheticKeywords", "targetCustomerSummary", "objective", "constraints", "requestedOutputs", "tagSearchTerms", "suggestedSeedNames", "country", "city"],
+  "properties": {
+    "category": { "type": "string", "enum": ["Streetwear", "Fashion", "Lifestyle", "Beauty", "FootwearAccessories", "Other"] },
+    "productThemes": { "type": "array", "maxItems": 5, "items": { "type": "string", "maxLength": 60 } },
+    "aestheticKeywords": { "type": "array", "maxItems": 5, "items": { "type": "string", "maxLength": 60 } },
+    "targetCustomerSummary": { "type": "string", "maxLength": 300 },
+    "objective": { "type": "string", "enum": ["Awareness", "Engagement", "Sales", "Launch", "Community", "Partnerships"] },
+    "constraints": { "type": "array", "maxItems": 5, "items": { "type": "string", "maxLength": 120 } },
+    "requestedOutputs": { "type": "array", "maxItems": 3, "items": { "type": "string", "enum": ["collaborations", "campaigns", "experiments"] } },
+    "tagSearchTerms": { "type": "array", "maxItems": 3, "items": { "type": "string", "maxLength": 40 } },
+    "suggestedSeedNames": {
+      "type": "array", "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kindHint"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 100 },
+          "kindHint": { "type": "string", "enum": ["Brand", "Artist", "Person", "Place", "Media", "Unknown"] }
+        }
+      }
+    },
+    "country": { "type": ["string", "null"], "maxLength": 60 },
+    "city": { "type": ["string", "null"], "maxLength": 60 }
+  }
+}

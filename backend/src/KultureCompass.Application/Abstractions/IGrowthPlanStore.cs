@@ -9,6 +9,10 @@ public interface IGrowthPlanStore
     /// Owner-scoped detail read (split query, no tracking) for the GET endpoints.
     Task<GrowthPlan?> GetByIdAsync(Guid id, string ownerId, CancellationToken ct);
 
+    /// <summary>Tracked, not owner-scoped: for the generation pipeline/worker only, which runs outside any request
+    /// and acts on the plan's own owner_id.</summary>
+    Task<GrowthPlan?> GetForProcessingAsync(Guid id, CancellationToken ct);
+
     Task<GrowthPlan?> GetByIdempotencyKeyAsync(string ownerId, string idempotencyKey, CancellationToken ct);
 
     Task<bool> HasActivePlanForProfileAsync(Guid businessProfileId, CancellationToken ct);

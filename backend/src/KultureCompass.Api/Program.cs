@@ -8,7 +8,9 @@ using KultureCompass.Api.Middleware;
 using KultureCompass.Application;
 using KultureCompass.Infrastructure;
 using KultureCompass.Infrastructure.Configuration;
+using KultureCompass.Infrastructure.Generation;
 using KultureCompass.Infrastructure.Identity;
+using KultureCompass.Infrastructure.Llm;
 using KultureCompass.Infrastructure.Persistence;
 using KultureCompass.Infrastructure.Qloo;
 using Microsoft.EntityFrameworkCore;
@@ -66,6 +68,9 @@ try
     builder.Services.AddOptions<LlmOptions>()
         .Bind(builder.Configuration.GetSection(LlmOptions.SectionName))
         .ValidateDataAnnotations()
+        .Validate(o => o.IsMock || !string.IsNullOrWhiteSpace(o.ApiKey),
+            "Llm:ApiKey is required when Llm:Provider is not Mock (set it via user-secrets or env, never appsettings).")
+        .Validate(o => !isProduction || !o.LogPrompts, "Llm:LogPrompts must be false in Production (02-security §7).")
         .ValidateOnStart();
     builder.Services.AddOptions<JwtOptions>()
         .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
@@ -103,6 +108,8 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddQlooClient(builder.Configuration);
+    builder.Services.AddLlmClient(builder.Configuration);
+    builder.Services.AddGenerationPipeline();
     builder.Services.AddKultureCompassAuth(builder.Configuration);
 
     var app = builder.Build();

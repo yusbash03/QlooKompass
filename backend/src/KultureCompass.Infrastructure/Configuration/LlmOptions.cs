@@ -28,5 +28,12 @@ public sealed class LlmOptions
     /// <summary>Debug-level prompt logging. Must never be true in Production (startup guard).</summary>
     public bool LogPrompts { get; set; }
 
+    /// <summary>Upper bound on a provider-requested retry delay (BE-04 §2: "cap 20 s").</summary>
+    [Range(0, 60)]
+    public int MaxRetryDelaySeconds { get; set; } = 20;
+
+    /// <summary>Mock provider only: Valid | InvalidJsonOnce | UnknownEvidenceKey | Truncated | QuotaExceeded.</summary>
+    public string MockScenario { get; set; } = "Valid";
+
     public bool IsMock => string.Equals(Provider, "Mock", StringComparison.OrdinalIgnoreCase);
 }

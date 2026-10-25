@@ -16,5 +16,21 @@ Started in BE-5; BE-10 completes this file. Each item says what is missing and w
 - **The 429 rate-limit response is unverified by tests.** It's configured, but the tests raise the limits so
   they don't trip it.
 
+## LLM / generation (BE-6)
+- **Gemini can't take the full plan schema.** It rejects our complete v1.0 schema as too complex, so after one
+  failed call it retries with the array size limits removed and remembers that. Gemini then isn't held to item
+  counts; `OutputValidator` enforces them, and repair/drop applies if they're wrong. See
+  `docs/backend/llm-verified-contract.md`.
+- **The OpenAI-compatible provider is unverified**: no live key was available, so only fake-handler tests cover it.
+- **Gemini 429 handling hasn't been seen against the real API.** Daily-quota detection works by spotting
+  "PerDay" in the error body; it's tested only with synthetic bodies.
+- **Restated limitations can still repeat.** When the model repeats a research limitation word for word (ignoring
+  punctuation and numbers), the duplicate is dropped. A rewording that adds detail is kept, so near-duplicates can
+  still appear.
+- **Retrieval progress says "complete" for skipped requests.** When a request is skipped because the call budget
+  ran out (e.g. 13 planned, 12-call budget), the detail still reads "13 of 13 Qloo requests complete".
+- **Docker builds need `contracts/`.** The Application project embeds `contracts/growth-plan-llm-output.schema.json`,
+  so the Docker build context must include `contracts/` (BE-10).
+
 ## Qloo
 - See `docs/backend/qloo-verified-contract.md` §3 and §7. Demographics (R8) stays off; error bodies aren't parsed.
