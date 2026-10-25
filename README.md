@@ -1,106 +1,135 @@
-# Kulture Compass — Specification Pack
+# Kulture Compass
 
-> **Kulture Compass** (working name; formerly *CulturePilot*) turns a small business's brief into an
-> evidence-grounded **Cultural Growth Plan** using the Qloo Taste AI API as the cultural-intelligence
-> foundation and an LLM as a bounded reasoning/explanation layer.
->
-> Built for the Qloo hackathon. First customer segment: Nigerian fashion, streetwear and lifestyle SMEs.
+> Evidence-grounded cultural growth planning for small fashion, streetwear and lifestyle brands, starting
+> with Nigeria. **Qloo** supplies the cultural evidence, an **LLM** interprets it, and you decide.
 
-This folder is a **build pack for Claude Code** (VS Code). Drop it into the root of an empty Git
-repository and let Claude Code implement the backend and the PWA slice by slice.
+You describe your brand (category, products, location, objective, a few reference artists or brands). Kulture
+Compass then:
+1. asks Qloo what your audience's taste looks like;
+2. has an LLM turn that evidence into insights, collaboration ideas and campaigns;
+3. validates that every recommendation cites real retrieved evidence;
+4. gives you a measurable experiment for each campaign.
+
+Retrieved facts and AI-generated hypotheses stay separate everywhere: in the data, in the API and in the UI.
+
+**Status:** the backend (slices BE-0 to BE-10) is complete and verified against the live Qloo hackathon API and
+Gemini. The PWA frontend (FE slices) **has not been built yet**. See [ENGINEERING_REPORT.md](ENGINEERING_REPORT.md)
+and [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
 ---
 
-## 1. What's in the pack
+## Quick start (Docker, no keys needed)
 
-| Path | Purpose | Read by |
+```bash
+QLOO_MODE=Mock LLM_PROVIDER=Mock docker compose up --build   # db → migrate → api on http://localhost:8080
+scripts/demo.sh                                               # terminal walkthrough of the judge demo
+```
+Mock mode uses hand-written synthetic Qloo fixtures (every entity is named "Synthetic …") and a deterministic
+mock LLM. Every plan says `isMock: true`, and its text is prefixed `[MOCK]`.
+
+## Live mode (real Qloo + Gemini)
+
+```bash
+cp .env.example .env    # gitignored; set QLOO_MODE=Live, QLOO_API_KEY, LLM_PROVIDER=Gemini, LLM_API_KEY,
+                        # and JWT_SIGNING_KEY=$(openssl rand -base64 48)
+docker compose up --build
+scripts/demo.sh
+```
+A live plan takes about 15–20 s: ~12 Qloo calls and 2 Gemini calls (`gemini-flash-lite-latest`).
+
+## Running the API without Docker
+
+Prerequisites: .NET 10 SDK, a PostgreSQL 17 instance, and Docker (only for the tests, via Testcontainers).
+
+```bash
+cd backend
+dotnet user-secrets set "Qloo:ApiKey" "<hackathon key>"   --project src/KultureCompass.Api
+dotnet user-secrets set "Llm:ApiKey"  "<Gemini key>"      --project src/KultureCompass.Api
+dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5432;Database=kulture_compass;Username=kc;Password=..." --project src/KultureCompass.Api
+
+dotnet run --project src/KultureCompass.Api -- --migrate          # apply EF Core migrations, then exit
+Qloo__Mode=Live Llm__Provider=Gemini dotnet run --project src/KultureCompass.Api
+```
+API docs in Development: `http://localhost:<port>/scalar` (UI) and `/openapi/v1.json`.
+The API contract lives in [contracts/openapi.yaml](contracts/openapi.yaml); a drift check keeps the backend
+matching it.
+
+Dev tool: `dotnet run --project src/KultureCompass.Api -- research --profile-json $PWD/samples/lagos-streetwear-sample.json`
+prints the evidence table for a brief without an LLM or database.
+
+## Tests
+
+```bash
+dotnet test backend/KultureCompass.sln --filter "Category!=Live"     # 292 tests; needs Docker for Postgres
+LLM_API_KEY=... QLOO_API_KEY=... dotnet test backend/KultureCompass.sln --filter "Category=Live"   # real providers
+```
+CI (`.github/workflows/`) does three things:
+- builds in Release with warnings as errors and runs the non-Live tests;
+- applies migrations to a fresh Postgres, boots the API and runs `scripts/openapi-drift.py`;
+- scans the git history with gitleaks (`.gitleaks.toml`).
+
+## Configuration
+
+Every setting is listed in [.env.example](.env.example) with its .NET name. Important ones:
+
+| Setting | Default | Notes |
 |---|---|---|
-| `CLAUDE.md` | Root rules Claude Code loads automatically: non-negotiables, conventions, build order | Claude Code (always) |
-| `backend/CLAUDE.md` | Backend-only rules (copy stays in `backend/` once the solution is scaffolded) | Claude Code in `backend/` |
-| `frontend/CLAUDE.md` | Frontend-only rules | Claude Code in `frontend/` |
-| `.env.example` | Every configuration variable, placeholders only | You + Claude Code |
-| `docs/shared/00-product-brief.md` | Vision, scope, personas, glossary, naming | Everyone |
-| `docs/shared/01-api-contract.md` | Human-readable REST contract, error codes, polling, idempotency | BE + FE |
-| `docs/shared/02-security-and-config.md` | JWT auth (Identity + refresh rotation), secrets, CORS, rate limits, logging redaction | BE + FE |
-| `docs/shared/03-testing-strategy.md` | Test pyramid, what to test per layer, fixtures policy | BE + FE |
-| `docs/shared/04-deployment-and-demo.md` | Docker, free hosting, judge demo script, final report template | BE + FE |
-| `docs/backend/BE-01-architecture.md` | Clean Architecture solution layout, dependency rules, ADRs | BE |
-| `docs/backend/BE-02-domain-and-data-model.md` | Entities, state machine, PostgreSQL schema, indexes | BE |
-| `docs/backend/BE-03-qloo-integration.md` | Qloo contract (known + to-verify), probe procedure, client spec, research planner, evidence-quality rules | BE |
-| `docs/backend/BE-04-ai-orchestration.md` | 8-step generation pipeline, LLM abstraction (Gemini + mock), prompts, validation/repair, evaluation mode | BE |
-| `docs/backend/BE-05-build-plan.md` | Ordered slices with copy-paste Claude Code prompts and done-criteria | BE |
-| `docs/frontend/FE-01-pwa-spec.md` | Routes, folders, state, JWT session handling, PWA/service-worker policy, offline, components | FE |
-| `docs/frontend/FE-02-build-plan.md` | Ordered slices with Claude Code prompts and done-criteria | FE |
-| `contracts/openapi.yaml` | **Source-of-truth** API contract (OpenAPI 3.1) | BE + FE |
-| `contracts/growth-plan-llm-output.schema.json` | JSON Schema the LLM must satisfy (v1) | BE |
-| `design/magic-patterns.md` | Design system + screen-by-screen prompts for Magic Patterns | You (design) → FE |
+| `Qloo:Mode` | `Mock` | `Live` requires `Qloo:ApiKey` (startup fails otherwise) |
+| `Llm:Provider` | `Mock` | `Gemini` (verified) or `OpenAiCompatible` (unverified) |
+| `Jwt:SigningKey` | dev placeholder | Production refuses the committed placeholder; use `openssl rand -base64 48` |
+| `Features:EvaluationMode` / `SamplePlan` / `ExperimentTracking` | on | each off → that endpoint returns 503 `feature_disabled` |
+| `Generation:DailyLimitPerUser` | 10 | plans per user per UTC day |
 
-## 2. Decisions already made
+Secrets never go in appsettings, `VITE_*` variables, logs or Git. Locally they live in user-secrets or the
+gitignored `.env`.
+
+## How it works
+
+```
+POST /growth-plans ─► plan Queued ─► in-process queue ─► worker (2 at a time)
+                                                          │
+   InterpretingBrief (LLM call A, falls back deterministically)
+ → PlanningResearch (fixed Qloo op menu, ≤12 calls) → RetrievingEvidence (Qloo, live progress)
+ → EvaluatingEvidence (deterministic quality labels, min-evidence gate)
+ → GeneratingRecommendations (LLM call B, JSON schema) → ValidatingOutput (every evidence key must exist; ≤2 repairs)
+ → DesigningExperiments (deterministic) → Saving
+GET /growth-plans/{id}/status ◄── stage_log persisted after every stage
+```
+- Clean Architecture modular monolith: Api → Infrastructure → Application → Domain. No MediatR, no broker.
+- ASP.NET Core Identity + self-issued HS256 JWTs (15 min) + rotating HttpOnly refresh cookie with reuse detection.
+- Decisions are recorded as ADRs in [docs/adr/](docs/adr/). Specs live in `docs/`.
+- Verified provider behaviour: [docs/backend/qloo-verified-contract.md](docs/backend/qloo-verified-contract.md),
+  [docs/backend/llm-verified-contract.md](docs/backend/llm-verified-contract.md).
+  Security checks: [docs/backend/security-review.md](docs/backend/security-review.md).
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `backend/` | .NET 10 solution (`src/` Domain, Application, Infrastructure, Api; `tests/` 5 test projects + synthetic fixtures) |
+| `contracts/` | `openapi.yaml` (API source of truth), `growth-plan-llm-output.schema.json` (LLM output schema v1.0) |
+| `docs/` | Product, API, security, testing and deployment specs; backend design docs; ADRs |
+| `scripts/` | `demo.sh`, `openapi-drift.py`, `qloo-probe.*` |
+| `design/`, `MdDocs/` | Design prompts and the original spec pack |
+| `frontend/` | *not created yet* (PWA, FE slices) |
+
+## Decisions and trade-offs
 
 | Topic | Decision | Why |
 |---|---|---|
-| Name | **Kulture Compass** (`KultureCompass.*` namespaces, short name *Kompass*) | "Navigate culture" metaphor; the K nods to Nigerian/Afro-pop spelling. Rename = find/replace `KultureCompass`/`Kulture Compass`. |
-| Backend | .NET 10 LTS, ASP.NET Core minimal APIs, EF Core 10 + Npgsql, FluentValidation, Serilog, built-in OpenAPI + Scalar UI | Matches your Clean Architecture habits; no MediatR |
-| Frontend | React + Vite + TS strict, React Router, TanStack Query, React Hook Form + Zod, Tailwind, `vite-plugin-pwa` | As per analysis (PWA variant) |
-| Auth | **Self-hosted JWT**: ASP.NET Core Identity (users, password hashing, lockout) + 15-min JWT access tokens (memory only) + rotating HttpOnly refresh-token cookie; `sub` = owner id | Your choice; no third-party identity dependency. Identity handles the crypto-sensitive parts so nothing is home-grown |
-| LLM | **Google Gemini (free tier via Google AI Studio)** behind `ILlmClient`; deterministic `MockLlmClient` always available; optional OpenAI-compatible adapter (Groq/OpenRouter) as fallback | Only major provider with a usable free API tier + native JSON-schema output. See caveats below. |
-| Async generation | DB-persisted status + in-process background worker (`Channel<Guid>`) + polling | No message broker needed |
-| Qloo | `https://hackathon.api.qloo.com`, header `X-Api-Key`, typed `HttpClient` + standard resilience, ≤ 5 req/s | From your message + community-observed behaviour; **verified in Slice BE-0** |
+| Backend | .NET 10, minimal APIs, EF Core 10 + Npgsql, FluentValidation, Serilog, built-in OpenAPI + Scalar | Clean Architecture without MediatR |
+| Auth | Self-hosted JWT on ASP.NET Core Identity | No third-party identity dependency; Identity handles hashing/lockout |
+| LLM | Gemini behind `ILlmClient`; deterministic mock always available; OpenAI-compatible fallback | Free tier with native JSON-schema output |
+| Async generation | DB-persisted status + `Channel<Guid>` worker + polling | No message broker needed |
+| Confidence | Deterministic evidence-quality rules, never an LLM-made probability | Explainable and testable |
 
-### LLM choice — the honest trade-off
-* **Gemini free tier is free but small and not private.** As of late 2026 the free tier is Flash/Flash-Lite only;
-  community-reported quotas are roughly ~20 requests/day for Flash and ~500/day for Flash-Lite (check your own
-  limits in Google AI Studio). Free-tier prompts may be used by Google to improve products, so **send no
-  personal data** (we don't — only business briefs). Google's terms also restrict free-tier use for apps serving
-  users in the EEA/UK/Switzerland — fine for a Nigeria-focused hackathon demo; move to the paid tier before any
-  real launch.
-* Each plan costs **2–4 LLM calls** → develop on **mock mode**, use **Flash-Lite** for routine live tests, and
-  switch `LLM_MODEL` to Flash for the recorded demo/judging.
-* If you hit quota, set `LLM_PROVIDER=OpenAiCompatible` and point it at Groq or OpenRouter free models.
+**The LLM trade-off:** Gemini's free tier is small and isn't private. Send no personal data (we only send
+business briefs), develop in mock mode, and move to a paid tier before any real launch. If you hit quota, switch
+to `LLM_PROVIDER=OpenAiCompatible` (Groq/OpenRouter).
 
-## 3. How to use this pack with Claude Code
-
-1. `git init kulture-compass && cd kulture-compass` and copy this whole folder in (keep the paths).
-2. Add your Qloo key **only** to backend user-secrets (never to a file in Git):
-   ```bash
-   cd backend/src/KultureCompass.Api   # after scaffolding in slice BE-1
-   dotnet user-secrets set "Qloo:ApiKey" "<your hackathon key>"
-   dotnet user-secrets set "Llm:ApiKey" "<your Gemini key>"
-   dotnet user-secrets set "Jwt:SigningKey" "$(openssl rand -base64 48)"
-   ```
-   Before scaffolding, export them in your shell for the probe script (slice BE-0).
-3. Open VS Code → Claude Code and run slices **in order**. Each slice in the build plans has a ready prompt:
-   * Backend: `docs/backend/BE-05-build-plan.md` (BE-0 … BE-10)
-   * Frontend: `docs/frontend/FE-02-build-plan.md` (FE-0 … FE-9)
-   * Suggested interleave: BE-0 → BE-1 → BE-2 → FE-0 → BE-3 → FE-1 → BE-4 … (see §4).
-4. After each slice: build, run tests, commit. Claude Code is instructed to stop and report if a slice's
-   done-criteria fail.
-5. Design track (parallel): use `design/magic-patterns.md` in Magic Patterns, export React+Tailwind, drop
-   exports into `frontend/design-exports/`, then run slice FE-3 to adapt them.
-
-## 4. Recommended overall order
-
-```
-BE-0 Qloo probe & contract notes ──► BE-1 Solution scaffold ──► BE-2 Domain + persistence
-        │                                                            │
-        ▼                                                            ▼
-FE-0 PWA scaffold ──► FE-1 Shell/auth/API client      BE-3 Qloo client ──► BE-4 Cultural intelligence
-                                                                     │
-                       FE-2 Profiles ◄── BE-5 Profiles API           ▼
-                       FE-3 Design adoption               BE-6 LLM + pipeline ──► BE-7 Plans API + worker
-                       FE-4 Generate + progress ◄──────────────────────────────────┘
-                       FE-5 Plan dashboard/evidence     BE-8 Experiments + evaluation
-                       FE-6 Saved plans/offline         BE-9 Hardening (rate limit, headers, health)
-                       FE-7 PWA install/update          BE-10 Docker, seed demo, README
-                       FE-8 Evaluation view
-                       FE-9 Hardening + a11y + e2e
-```
-
-## 5. Things you still need to do yourself
-- Generate a JWT signing key (`openssl rand -base64 48`) and store it with `dotnet user-secrets set "Jwt:SigningKey" "…"`.
-- Plan to serve the API and PWA from the **same site** (e.g. `/api` proxied by the frontend host) so the refresh cookie works — see 02-security §1.
-- Create a Gemini API key at Google AI Studio.
-- **Rotate your Qloo hackathon key if it has been pasted anywhere public** (including chat logs you share).
-- Pick hosting (see `docs/shared/04-deployment-and-demo.md`).
-- Read Qloo's hackathon terms on caching/publishing response data — the pack defaults to *no committed real
-  Qloo responses* and a short in-memory cache only.
+## Things you still need to do yourself
+- Build the PWA (FE slices in `docs/frontend/FE-02-build-plan.md`), then `docker compose --profile web up`.
+- Pick public hosting (see [docs/shared/04-deployment-and-demo.md](docs/shared/04-deployment-and-demo.md)) and serve the
+  API same-origin under `/api` so the refresh cookie works.
+- **Rotate the Qloo and Gemini keys after the hackathon.** Both were pasted into a chat during development.
+- Review Qloo's terms before enabling the response cache (`Qloo:CacheTtlMinutes`, off by default).

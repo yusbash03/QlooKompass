@@ -1,6 +1,21 @@
 # Known limitations
 
-Started in BE-5; BE-10 completes this file. Each item says what is missing and what happens instead.
+Backend slices BE-0 to BE-10. Each item says what is missing and what happens instead.
+
+## Project scope
+- **No frontend yet.** The PWA (FE slices) hasn't been built, so `docker compose up` serves the API only. The
+  `web` service is behind the `web` profile until `frontend/Dockerfile` exists. The judge demo runs as a
+  terminal script (`scripts/demo.sh`), and the PWA-specific demo steps (install, offline, evidence drawer,
+  colour coding) can't be shown.
+- **Not deployed publicly.** The local Docker stack is verified (mock and live); there's no public URL.
+
+## Testing
+- **Unreproduced test-infrastructure flake.** Twice, a `dotnet test` on the whole solution *that also compiled*
+  failed every `KultureCompass.Api.Tests` test within ~4 s (the test fixture failing to start). Every rerun
+  passed: more than 8 full runs, including 4 with forced rebuilds. The error text wasn't captured, so the cause
+  is unknown; Testcontainers/Docker startup contention is the leading guess. CI builds first and then runs
+  `dotnet test --no-build`, the path that has never failed. If it recurs, the fixture's exception message is in
+  the test log.
 
 ## Auth (BE-5)
 - **Not in the MVP:** email confirmation, password reset by email, MFA, social login (02-security §1).
@@ -52,6 +67,11 @@ Started in BE-5; BE-10 completes this file. Each item says what is missing and w
 - **The LLM-only output isn't run through `OutputValidator`** (it has no evidence to validate against). It is parsed
   and stored as-is for side-by-side review.
 - **`Features:ExperimentTracking` now defaults to `true`** in appsettings.json, since the PATCH endpoint exists.
+
+## Mock mode
+- **Mock search returns the user's own query as its top hit** (with a synthetic id), so seed resolution works for
+  any brief. The fixtures behind it are always "Synthetic …"; mock-mode evidence never contains a name the user
+  didn't type.
 
 ## Qloo
 - See `docs/backend/qloo-verified-contract.md` §3 and §7. Demographics (R8) stays off; error bodies aren't parsed.

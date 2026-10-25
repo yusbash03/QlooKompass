@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+.git/
+.github/
+.vs/
+.idea/
+qloo-probe-output/
+MdDocs/
+*.log
+# Never send local secrets into an image build context.
+.env
+.env.*
+!.env.example
+**/*.local.json

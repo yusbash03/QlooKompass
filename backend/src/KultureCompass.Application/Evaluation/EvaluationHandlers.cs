@@ -134,9 +134,10 @@ public sealed partial class EvaluationCompleter(
 
         var briefTerms = EvaluationScorer.BriefTerms(plan.BriefSnapshot);
         var briefJson = PromptJson.Brief(plan.BriefSnapshot);
+        var briefNames = GrowthPlanPipeline.BriefNames(plan.BriefSnapshot);
         var grounded = EvaluationScorer.Score(EvaluationScorer.FromPlan(plan), [.. plan.Evidence.Select(e => e.Name)],
-            briefJson + PromptJson.Evidence(plan.Evidence), briefTerms);
-        var llmOnly = EvaluationScorer.Score(EvaluationScorer.FromDraft(draft), [], briefJson, briefTerms);
+            briefJson + PromptJson.Evidence(plan.Evidence), briefTerms, briefNames);
+        var llmOnly = EvaluationScorer.Score(EvaluationScorer.FromDraft(draft), [], briefJson, briefTerms, briefNames);
 
         run.Complete(JsonSerializer.Serialize(draft, GrowthPlanDraft.WriteJson), grounded, llmOnly, EvaluationScorer.Notes, clock.GetUtcNow());
         await evaluations.SaveChangesAsync(ct).ConfigureAwait(false);

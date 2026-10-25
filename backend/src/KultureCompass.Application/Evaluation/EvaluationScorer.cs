@@ -25,8 +25,11 @@ public static class EvaluationScorer
         "No winner is declared. Review both outputs side by side.",
     ];
 
+    /// <param name="briefNames">The user's own brand and reference names: taken from the brief, so neither "traceable"
+    /// nor "unsupported" — excluded from entity counts for both outputs.</param>
     public static EvaluationMetrics Score(
-        ScoringSubject subject, IReadOnlyCollection<string> evidenceNames, string groundingText, IReadOnlyCollection<string> briefTerms)
+        ScoringSubject subject, IReadOnlyCollection<string> evidenceNames, string groundingText, IReadOnlyCollection<string> briefTerms,
+        IReadOnlySet<string>? briefNames = null)
     {
         var evidence = evidenceNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var allText = string.Join("\n", subject.Recommendations.SelectMany(r => r.Texts));
@@ -35,6 +38,7 @@ public static class EvaluationScorer
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .Concat(evidence.Where(name => allText.Contains(name, StringComparison.OrdinalIgnoreCase)))
             .Select(n => n.Trim())
+            .Where(n => briefNames is null || !briefNames.Contains(n))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var traceable = named.Count(evidence.Contains);
 

@@ -1,0 +1,89 @@
+# Kulture Compass — local stack (04-deployment §1).
+#
+#   Zero-key mock run:   QLOO_MODE=Mock LLM_PROVIDER=Mock docker compose up --build
+#   With your keys:      cp .env.example .env   # fill in values, never commit .env
+#                        docker compose up --build
+#   PWA (once frontend/ exists):  docker compose --profile web up --build
+#
+# Variables come from the shell or a gitignored .env (see .env.example for every option). Defaults below are
+# local-dev only; the API's startup guards refuse the placeholder JWT key and insecure cookies in Production.
+
+name: kulture-compass
+
+x-api-env: &api-env
+  ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+  ConnectionStrings__Default: Host=db;Port=5432;Database=kulture_compass;Username=kc;Password=${POSTGRES_PASSWORD:-change-me}
+  App__BaseUrl: ${APP_BASE_URL:-http://localhost:5173}
+  App__EnforceHttps: ${APP_ENFORCE_HTTPS:-false}
+  App__TrustForwardedHeaders: ${APP_TRUST_FORWARDED_HEADERS:-false}
+  Qloo__BaseUrl: ${QLOO_BASE_URL:-https://hackathon.api.qloo.com}
+  Qloo__ApiKey: ${QLOO_API_KEY:-}
+  Qloo__Mode: ${QLOO_MODE:-Mock}
+  Qloo__MaxRequestsPerSecond: ${QLOO_MAX_REQUESTS_PER_SECOND:-4}
+  Qloo__MaxCallsPerPlan: ${QLOO_MAX_CALLS_PER_PLAN:-12}
+  Llm__Provider: ${LLM_PROVIDER:-Mock}
+  Llm__ApiKey: ${LLM_API_KEY:-}
+  Llm__Model: ${LLM_MODEL:-gemini-flash-lite-latest}
+  Llm__BaseUrl: ${LLM_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+  # Local-dev placeholder (same value as appsettings.json); rejected by the startup guard in Production.
+  Jwt__SigningKey: ${JWT_SIGNING_KEY:-z7MfgP71HDHTQiNagjq5rfDbG/3New6hjqz7RqYMicDkQCtqR7QLGrJynJc5aGOb}
+  Jwt__Issuer: ${JWT_ISSUER:-http://localhost:8080}
+  Jwt__Audience: ${JWT_AUDIENCE:-kulture-compass-web}
+  Jwt__CookieSecure: ${AUTH_COOKIE_SECURE:-false}
+  Demo__UserEmail: ${DEMO_USER_EMAIL:-}
+  Demo__UserPassword: ${DEMO_USER_PASSWORD:-}
+  Features__EvaluationMode: ${FEATURE_EVALUATION_MODE:-true}
+  Features__SamplePlan: ${FEATURE_SAMPLE_PLAN:-true}
+  Generation__DailyLimitPerUser: ${GENERATION_DAILY_LIMIT_PER_USER:-10}
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: kc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: kulture_compass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kc -d kulture_compass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: applies EF Core migrations, then exits (never EnsureCreated).
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: kulture-compass-api:local
+    command: ["--migrate"]
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: kulture-compass-api:local
+    environment: *api-env
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # The PWA (Vite build → nginx, proxies /api/ → api:8080 for same-origin refresh cookies). Its Dockerfile and nginx
+  # config arrive with the frontend slices; until frontend/ exists this service is opt-in via the "web" profile.
+  web:
+    profiles: ["web"]
+    build:
+      context: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

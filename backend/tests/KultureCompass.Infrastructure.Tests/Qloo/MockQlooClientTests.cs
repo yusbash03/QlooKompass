@@ -9,7 +9,7 @@ public class MockQlooClientTests
     private readonly MockQlooClient _sut = new();
 
     [Fact]
-    public async Task SearchEntitiesAsync_is_deterministic_and_every_name_is_prefixed_Synthetic()
+    public async Task SearchEntitiesAsync_is_deterministic_and_every_fixture_name_is_prefixed_Synthetic()
     {
         var first = await _sut.SearchEntitiesAsync(new EntitySearchRequest { Query = "Burna Boy", Types = [QlooEntityType.Artist] }, CancellationToken.None);
         var second = await _sut.SearchEntitiesAsync(new EntitySearchRequest { Query = "Burna Boy", Types = [QlooEntityType.Artist] }, CancellationToken.None);
@@ -22,7 +22,8 @@ public class MockQlooClientTests
         // and two independently-deserialized instances are reference-unequal even with identical content.
         firstValue.Select(e => e.Id).ShouldBe(secondValue.Select(e => e.Id));
         firstValue.ShouldNotBeEmpty();
-        firstValue.ShouldAllBe(e => e.Name.StartsWith("Synthetic ", StringComparison.Ordinal));
+        // Top hit echoes the user's own query (see Search_echoes_the_users_query…); everything else is a fixture.
+        firstValue.Skip(1).ShouldAllBe(e => e.Name.StartsWith("Synthetic ", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -56,5 +57,19 @@ public class MockQlooClientTests
         value.Entities.ShouldNotBeEmpty();
         value.Entities.ShouldAllBe(e => e.Affinity.HasValue);
         value.Localities.ShouldNotBeEmpty();
+    }
+
+    [Fact]
+    public async Task Search_echoes_the_users_query_as_the_top_hit_so_any_brief_resolves_in_mock_mode()
+    {
+        var sut = new MockQlooClient();
+
+        var result = await sut.SearchEntitiesAsync(new EntitySearchRequest { Query = "Any Artist Name", Types = [QlooEntityType.Artist], Take = 3 }, CancellationToken.None);
+
+        var hits = result.ShouldBeOfType<QlooResult<IReadOnlyList<QlooEntity>>.Success>().Value;
+        hits[0].Name.ShouldBe("Any Artist Name");
+        hits[0].Id.ShouldStartWith("synthetic-mock-seed-");
+        hits[0].Type.ShouldBe("urn:entity:artist");
+        hits.Skip(1).ShouldAllBe(h => h.Name.StartsWith("Synthetic "));
     }
 }

@@ -145,7 +145,10 @@ public sealed partial class GrowthPlanPipeline(
 
         // 7 — DesigningExperiments (deterministic)
         plan.AdvanceTo(GenerationStage.DesigningExperiments, null, Now());
-        var content = DraftMapper.Map(validated.Draft!, evidenceSet.Items, validated.UnlinkedMentions);
+        // Names the user wrote (their brand, their reference entities) are not "AI suggestions", even when the model
+        // declares them without an evidence key (seen in live runs).
+        var briefNames = BriefNames(snapshot);
+        var content = DraftMapper.Map(validated.Draft!, evidenceSet.Items, [.. validated.UnlinkedMentions.Where(n => !briefNames.Contains(n))]);
         var experiments = ExperimentDesigner.Design(validated.Draft!, snapshot);
         await SaveAsync(ct).ConfigureAwait(false);
 
@@ -184,6 +187,9 @@ public sealed partial class GrowthPlanPipeline(
             await consumer.ConfigureAwait(false);
         }
     }
+
+    public static IReadOnlySet<string> BriefNames(BriefSnapshot snapshot) =>
+        new HashSet<string>([snapshot.BrandName, .. snapshot.ReferenceEntities.Select(r => r.Name)], StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Live runs showed the model echoing research limitations with small wording changes ("budget (12)
     /// reached" vs "budget reached"). Compare on letters only and keep the retrieved wording.</summary>

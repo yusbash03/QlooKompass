@@ -215,6 +215,21 @@ public class GrowthPlanPipelineTests
     }
 
     [Fact]
+    public async Task The_users_own_brand_and_references_are_never_labelled_AI_suggestions()
+    {
+        var draft = ValidDraft();
+        draft["mentionedEntities"] = new JsonArray(
+            new JsonObject { ["name"] = "Synthetic Eko Threads", ["evidenceKey"] = null },      // the brand itself
+            new JsonObject { ["name"] = "synthetic afrobeat star", ["evidenceKey"] = null },    // user's reference (case differs)
+            new JsonObject { ["name"] = "Synthetic Invented Festival", ["evidenceKey"] = null });
+        _llm.ThenReturn(draft);
+
+        await RunAsync();
+
+        Plan.UnlinkedMentions.Select(m => m.Name).ShouldBe(["Synthetic Invented Festival"]);
+    }
+
+    [Fact]
     public async Task Qloo_auth_failure_fails_with_qloo_auth_failed()
     {
         _research.OnRetrieve = _ => throw new QlooAuthFailedException("bad key");

@@ -47,6 +47,17 @@ public class EvaluationScorerTests
     }
 
     [Fact]
+    public void Names_from_the_brief_are_neither_traceable_nor_unsupported()
+    {
+        var subject = new ScoringSubject([new("ins_1", ["Synthetic Brand x Synthetic Invented Label"], 0)], ["Synthetic Brand", "Synthetic Invented Label"]);
+
+        var m = EvaluationScorer.Score(subject, [], "", BriefTerms, new HashSet<string>(["synthetic brand"], StringComparer.OrdinalIgnoreCase));
+
+        m.NamedEntities.ShouldBe(1);
+        m.UnsupportedEntities.ShouldBe(1);
+    }
+
+    [Fact]
     public void Numeric_claims_absent_from_the_grounding_text_are_counted()
     {
         var subject = Subject(("cam_1", "Expect a 40% lift and 10k followers; the 15% discount stays.", 1));
