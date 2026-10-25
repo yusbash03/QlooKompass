@@ -1,10 +1,14 @@
 using System.Text.Json.Serialization;
+using KultureCompass.Api.Auth;
 using KultureCompass.Api.DevTools;
 using KultureCompass.Api.Endpoints;
 using KultureCompass.Api.ErrorHandling;
+using KultureCompass.Api.Http;
 using KultureCompass.Api.Middleware;
+using KultureCompass.Application;
 using KultureCompass.Infrastructure;
 using KultureCompass.Infrastructure.Configuration;
+using KultureCompass.Infrastructure.Identity;
 using KultureCompass.Infrastructure.Persistence;
 using KultureCompass.Infrastructure.Qloo;
 using Microsoft.EntityFrameworkCore;
@@ -32,8 +36,19 @@ try
         options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-    builder.Services.AddProblemDetails();
+    builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
+    {
+        // Every problem response — handler, framework (JWT challenge, binding, rate limiter) or exception — carries
+        // the contract's code + traceId members.
+        context.ProblemDetails.Extensions.TryAdd("traceId", context.HttpContext.TraceIdentifier);
+        if (ResultHttpExtensions.DefaultCodeFor(context.ProblemDetails.Status) is { } code)
+            context.ProblemDetails.Extensions.TryAdd("code", code);
+    });
     builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
+
+    // Minimal APIs throw on bad request bodies in Development by default, which would surface as 500. Always
+    // return the 400 Problem Details instead.
+    builder.Services.Configure<RouteHandlerOptions>(o => o.ThrowOnBadRequest = false);
 
     builder.Services.AddOptions<AppOptions>()
         .Bind(builder.Configuration.GetSection(AppOptions.SectionName))
@@ -47,6 +62,7 @@ try
         .Bind(builder.Configuration.GetSection(GenerationSettings.SectionName))
         .ValidateDataAnnotations()
         .ValidateOnStart();
+    var isProduction = builder.Environment.IsProduction();
     builder.Services.AddOptions<LlmOptions>()
         .Bind(builder.Configuration.GetSection(LlmOptions.SectionName))
         .ValidateDataAnnotations()
@@ -54,6 +70,10 @@ try
     builder.Services.AddOptions<JwtOptions>()
         .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
         .ValidateDataAnnotations()
+        .Validate(o => o.HasValidSigningKey(),
+            $"Jwt:SigningKey must be base64 encoding at least {JwtOptions.MinSigningKeyBytes} random bytes (openssl rand -base64 48).")
+        .Validate(o => !isProduction || !JwtOptions.KnownPlaceholderKeys.Contains(o.SigningKey),
+            "Jwt:SigningKey is a committed placeholder; set a real key via env/secret store in Production.")
         .ValidateOnStart();
 
     var appOptions = builder.Configuration.GetSection(AppOptions.SectionName).Get<AppOptions>() ?? new AppOptions();
@@ -79,8 +99,11 @@ try
         ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.");
     builder.Services.AddHealthChecks().AddNpgSql(connectionString, name: "postgres");
 
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddQlooClient(builder.Configuration);
+    builder.Services.AddKultureCompassAuth(builder.Configuration);
 
     var app = builder.Build();
 
@@ -106,23 +129,46 @@ try
         return;
     }
 
+    if (!app.Environment.IsProduction())
+    {
+        await SeedDemoUserAsync(app);
+    }
+
     app.UseExceptionHandler();
+    app.UseStatusCodePages();
     app.UseSecurityHeaders();
     app.UseCors(corsPolicyName);
+    app.UseAuthentication();
+    app.UseRateLimiter();
+    app.UseAuthorization();
 
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
     if (app.Environment.IsDevelopment())
     {
-        app.MapScalarApiReference();
+        app.MapScalarApiReference().AllowAnonymous();
     }
 
     app.MapSystemEndpoints();
+    app.MapAuthEndpoints();
+    app.MapBusinessProfileEndpoints();
 
     app.Run();
 }
 finally
 {
     Log.CloseAndFlush();
+}
+
+static async Task SeedDemoUserAsync(WebApplication app)
+{
+    var email = app.Configuration["Demo:UserEmail"];
+    var password = app.Configuration["Demo:UserPassword"];
+    if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        return;
+
+    using var scope = app.Services.CreateScope();
+    var created = await scope.ServiceProvider.GetRequiredService<DemoUserSeeder>().SeedAsync(email, password, CancellationToken.None);
+    Log.Information("Demo user seeding: {Outcome}", created ? "created" : "already exists");
 }
 
 namespace KultureCompass.Api

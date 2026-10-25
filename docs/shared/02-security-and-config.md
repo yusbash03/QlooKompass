@@ -26,9 +26,9 @@ Use `Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler` to create tokens
 | Endpoint | Behaviour |
 |---|---|
 | `POST /api/v1/auth/register` | `{ email, password, displayName? }` → creates user via `UserManager`, signs in: returns `AuthResponse` + sets refresh cookie. 409 `email_taken` (generic message to limit enumeration is acceptable trade-off for MVP; rate-limited) |
-| `POST /api/v1/auth/login` | `{ email, password }` → `SignInManager.CheckPasswordSignInAsync(lockoutOnFailure: true)`; 401 `invalid_credentials` (same message for unknown email/wrong password); 423 `account_locked` |
-| `POST /api/v1/auth/refresh` | Reads `kc_rt` cookie, requires header `X-Requested-With: kc-web` (CSRF guard) → rotates, returns `AuthResponse` |
-| `POST /api/v1/auth/logout` | Revokes family, deletes cookie, 204 |
+| `POST /api/v1/auth/login` | `{ email, password }` → same steps as `SignInManager.CheckPasswordSignInAsync(lockoutOnFailure: true)` (implemented in `UserAccounts` with `UserManager` lockout APIs so Infrastructure stays free of ASP.NET HTTP types); 401 `invalid_credentials` (same message for unknown email/wrong password); 423 `account_locked` |
+| `POST /api/v1/auth/refresh` | Reads `kc_rt` cookie, requires header `X-Requested-With: kc-web` (CSRF guard; missing → 400 `validation_failed`, checked before rotation) → rotates, returns `AuthResponse`. Any refresh failure clears the cookie |
+| `POST /api/v1/auth/logout` | Requires access token + `X-Requested-With: kc-web` (per openapi). Revokes family, deletes cookie, 204 |
 | `GET /api/v1/auth/me` | Current user profile `{ id, email, displayName, createdAt }` |
 `AuthResponse = { accessToken, expiresAt, user: { id, email, displayName } }`.
 
@@ -40,8 +40,7 @@ Password policy: min 10 chars, require 3 of 4 character classes via Identity opt
 builder.Services.AddIdentityCore<AppUser>(o => {
         o.Password.RequiredLength = 10; o.User.RequireUniqueEmail = true;
         o.Lockout.MaxFailedAccessAttempts = 5; o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager();
+    .AddEntityFrameworkStores<AppDbContext>();   // no SignInManager — see /auth/login row above
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
   .AddJwtBearer(o => {
