@@ -42,6 +42,22 @@ public sealed class GrowthPlanStore(AppDbContext db) : IGrowthPlanStore
     public Task<GrowthPlan?> GetForProcessingAsync(Guid id, CancellationToken ct) =>
         db.GrowthPlans.AsSplitQuery().FirstOrDefaultAsync(p => p.Id == id, ct);
 
+    public Task<GrowthPlan?> GetForUpdateAsync(Guid id, string ownerId, CancellationToken ct) =>
+        db.GrowthPlans.AsSplitQuery().FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == ownerId, ct);
+
+    public async Task<bool> TrySaveChangesAsync(CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
+    }
+
     public async Task<IReadOnlyList<GrowthPlan>> GetUnfinishedAsync(CancellationToken ct) =>
         await db.GrowthPlans
             .AsSplitQuery()

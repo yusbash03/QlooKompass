@@ -1,5 +1,6 @@
 using FluentValidation;
 using KultureCompass.Application.Auth;
+using KultureCompass.Application.Evaluation;
 using KultureCompass.Application.Generation;
 using KultureCompass.Application.Plans;
 using KultureCompass.Application.Profiles;
@@ -17,6 +18,7 @@ public static class DependencyInjection
         services.AddSingleton<IValidator<BusinessProfileRequest>, BusinessProfileRequestValidator>();
         services.AddSingleton<IValidator<PageQuery>, PageQueryValidator>();
         services.AddSingleton<IValidator<StartGrowthPlanRequest>, StartGrowthPlanRequestValidator>();
+        services.AddSingleton<IValidator<UpdateExperimentRequest>, UpdateExperimentRequestValidator>();
 
         services.AddScoped<RegisterHandler>();
         services.AddScoped<LoginHandler>();
@@ -40,6 +42,11 @@ public static class DependencyInjection
         services.AddScoped<GetGrowthPlanStatusHandler>();
         services.AddScoped<ListGrowthPlansHandler>();
         services.AddScoped<GetQuotaHandler>();
+        services.AddScoped<UpdateExperimentHandler>();
+
+        services.AddScoped<StartEvaluationHandler>();
+        services.AddScoped<GetEvaluationHandler>();
+        services.AddScoped<EvaluationCompleter>();
 
         return services;
     }

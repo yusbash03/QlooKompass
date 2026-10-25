@@ -26,7 +26,9 @@ runs are committed; only shapes, field names and measurements.
 | Full pipeline, live Qloo + Gemini, Lagos streetwear brief (run 1) | `CompletedWithLimitations`, 2 LLM calls, 12 Qloo calls, 50 evidence, 3 insights / 1 collaboration / 1 campaign / 1 experiment, 0 repairs, ~15 s | 4,373 / 2,532 |
 | Same, run 2 | `CompletedWithLimitations`, 60 evidence, 3 / 2 / 1 / 1, 0 repairs, ~18 s | 5,025 / 2,168 |
 
-`CompletedWithLimitations` in both runs came from genuine research limitations (one tag term not found in Qloo;
+| LLM-only schema (evidence-key fields removed, BE-8 evaluation baseline) | accepted; 3 insights / 2 collaborations / 1 campaign; 7 entities declared, all `evidenceKey: null`, no `ev_` keys | 375 / 1,396 |
+
+`CompletedWithLimitations` in both pipeline runs came from genuine research limitations (one tag term not found in Qloo;
 13 planned operations against the 12-call budget), not from validation.
 
 ## OpenAI-compatible (`Llm:Provider=OpenAiCompatible`) — UNVERIFIED

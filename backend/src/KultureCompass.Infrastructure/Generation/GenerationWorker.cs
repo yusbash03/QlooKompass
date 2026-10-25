@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using KultureCompass.Application.Abstractions;
+using KultureCompass.Application.Evaluation;
 using KultureCompass.Application.Generation;
 using KultureCompass.Domain.Plans;
 using KultureCompass.Infrastructure.Configuration;
@@ -46,6 +47,8 @@ public sealed partial class GenerationWorker(
                     {
                         await using var scope = scopes.CreateAsyncScope();
                         await scope.ServiceProvider.GetRequiredService<GrowthPlanPipeline>().RunAsync(planId, stoppingToken).ConfigureAwait(false);
+                        // Evaluation mode (BE-8): if this plan is an evaluation's grounded run, do the LLM-only half now.
+                        await scope.ServiceProvider.GetRequiredService<EvaluationCompleter>().CompleteForPlanAsync(planId, stoppingToken).ConfigureAwait(false);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {

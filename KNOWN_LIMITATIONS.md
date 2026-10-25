@@ -39,7 +39,17 @@ Started in BE-5; BE-10 completes this file. Each item says what is missing and w
 - **A restart fails Running plans immediately** with `timeout` ("interrupted by a server restart"), rather than
   only those older than the timeout (BE-01 §4 has the note). Queued plans are re-enqueued.
 - **Failed plans count toward the daily quota**: `usedToday` counts every plan created today.
-- **`PATCH /growth-plans/{id}/experiments/{experimentId}` comes in BE-8** (stretch).
+
+## Evaluation mode, sample plan, experiments (BE-8)
+- **An evaluation uses one plan from the daily quota** (its grounded run is a normal plan) plus one extra LLM call
+  for the LLM-only baseline. Quota and "one active plan per profile" both apply.
+- **Rare race: the LLM-only call can run twice for one evaluation.** If the worker finishes the grounded plan at
+  the same moment the evaluation row is saved, both may complete it. The last write wins and both results are valid.
+- **Entity metrics are not NER.** They count declared names plus exact matches of retrieved evidence names. This
+  caveat ships in every evaluation's `notes`.
+- **The LLM-only output isn't run through `OutputValidator`** (it has no evidence to validate against). It is parsed
+  and stored as-is for side-by-side review.
+- **`Features:ExperimentTracking` now defaults to `true`** in appsettings.json, since the PATCH endpoint exists.
 
 ## Qloo
 - See `docs/backend/qloo-verified-contract.md` §3 and §7. Demographics (R8) stays off; error bodies aren't parsed.

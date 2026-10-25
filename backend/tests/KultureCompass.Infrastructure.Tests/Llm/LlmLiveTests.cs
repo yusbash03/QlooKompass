@@ -76,6 +76,27 @@ public class LlmLiveTests(PostgresFixture fixture, ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task Gemini_accepts_the_llm_only_schema_and_declares_entities_without_keys()
+    {
+        if (string.IsNullOrEmpty(LlmKey))
+            return;
+
+        var brief = PipelineTestHost.LagosStreetwearBrief();
+        var user = $"<brief>{System.Text.Json.JsonSerializer.Serialize(new { brief.BrandName, brief.Category, brief.ProductsDescription, brief.PrimaryLocation, brief.MarketingObjective }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web) { Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } })}</brief>" +
+                   "<constraints>{\"insights\":\"3-6\",\"collaborations\":\"0-4\",\"campaigns\":\"1-3\"}</constraints>";
+
+        var result = await Gemini().GenerateJsonAsync(new LlmJsonRequest(
+            PromptLibrary.LlmOnlySystem, user, PromptLibrary.LlmOnlySchema(), PromptLibrary.LlmOnlySchemaName, 6000), CancellationToken.None);
+
+        var success = result.ShouldBeOfType<LlmResult.Success>();
+        var draft = System.Text.Json.JsonSerializer.Deserialize<GrowthPlanDraft>(success.Json, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!;
+        output.WriteLine($"usage={success.Usage} insights={draft.Insights!.Count} collabs={draft.Collaborations!.Count} campaigns={draft.Campaigns!.Count} mentioned={draft.MentionedEntities!.Count}");
+        draft.Insights.Count.ShouldBeGreaterThanOrEqualTo(3);
+        draft.MentionedEntities.ShouldAllBe(m => m.EvidenceKey == null);
+        success.Json.ShouldNotContain("ev_0");
+    }
+
+    [Fact]
     public async Task Full_pipeline_with_live_Qloo_and_live_Gemini_produces_a_grounded_plan()
     {
         if (string.IsNullOrEmpty(LlmKey) || string.IsNullOrEmpty(QlooKey))

@@ -212,6 +212,11 @@ public static partial class OutputValidator
             (d.Insights?.Count ?? 0) + (d.Collaborations?.Count ?? 0) + (d.Campaigns?.Count ?? 0) + (d.Experiments?.Count ?? 0);
     }
 
+    /// <summary>Rule 9 detector, shared with EvaluationScorer: the numeric token of every percentage, "N followers/likes/
+    /// views/subscribers" and "engagement rate of N" claim in <paramref name="text"/>.</summary>
+    public static IEnumerable<string> NumericClaims(string text) =>
+        NumericClaim().Matches(text).Select(m => m.Groups["num"].Value);
+
     /// <summary>"urn:entity:brand" → "brand"; "urn:tag:keyword:qloo" → "tag".</summary>
     public static string ShortType(string entityType)
     {
@@ -270,7 +275,7 @@ public static partial class OutputValidator
         foreach (var (item, texts) in items)
         {
             var claims = texts.Where(t => t is not null)
-                .SelectMany(t => NumericClaim().Matches(t!).Select(m => m.Groups["num"].Value))
+                .SelectMany(t => NumericClaims(t!))
                 .Where(number => !groundingText.Contains(number, StringComparison.Ordinal))
                 .Distinct()
                 .ToList();

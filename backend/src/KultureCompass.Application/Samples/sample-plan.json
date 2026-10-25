@@ -1,0 +1,70 @@
+{
+  "_synthetic": true,
+  "id": "00000000-0000-7000-8000-000000000001",
+  "businessProfileId": "00000000-0000-7000-8000-000000000002",
+  "brandName": "Synthetic Eko Threads",
+  "status": "CompletedWithLimitations",
+  "stage": "Done",
+  "error": null,
+  "isMock": true,
+  "isSample": true,
+  "qlooMode": "Mock",
+  "llmProvider": "Mock",
+  "llmModel": "mock-v1",
+  "schemaVersion": "1.0",
+  "promptVersion": "synth-v1",
+  "briefSnapshot": {
+    "brandName": "Synthetic Eko Threads",
+    "description": "A sample Lagos streetwear label used to demonstrate Kulture Compass. Not a real business.",
+    "category": "Streetwear",
+    "categoryOther": null,
+    "productsDescription": "Graphic tees, bucket hats and utility jackets inspired by Lagos street style.",
+    "targetMarket": "Gen Z and young millennial creatives in Lagos",
+    "primaryLocation": "Lagos, Nigeria",
+    "marketingObjective": "Sales",
+    "objectiveNotes": "Launching a capsule collection next quarter",
+    "brandIdentity": "Bold colour, everyday utility, music-led",
+    "referenceEntities": [
+      { "name": "Synthetic Afrobeat Star", "kindHint": "Artist" },
+      { "name": "Synthetic Lagos Streetwear Co", "kindHint": "Brand" }
+    ],
+    "budgetRange": "From100kTo500k"
+  },
+  "summary": {
+    "headline": "SAMPLE: Lead with Lagos music culture, then test a small capsule collaboration",
+    "overview": "SAMPLE PLAN with synthetic data. The (synthetic) evidence links this brand's audience to Afrobeats and alté artists, adjacent streetwear labels and Lekki nightlife venues. The plan proposes music-led content first, one low-cost collaboration test, and a measurable 14-day experiment."
+  },
+  "evidence": [
+    { "key": "ev_001", "qlooEntityId": "synthetic-artist-001", "name": "Synthetic Afrobeat Star", "entityType": "urn:entity:artist", "subtype": null, "sourceOperation": "Search", "sourceSignals": ["Synthetic Afrobeat Star"], "affinity": null, "popularity": 0.91, "tags": ["afrobeats", "lagos"], "metadata": { "shortDescription": "Synthetic sample artist.", "imageUrl": null, "externalUrl": null, "releaseYear": null, "location": null }, "quality": "Strong", "qualityReasons": ["resolved user-provided seed"], "retrievedAt": "2026-10-25T12:00:00Z" },
+    { "key": "ev_002", "qlooEntityId": "synthetic-brand-010", "name": "Synthetic Lagos Streetwear Co", "entityType": "urn:entity:brand", "subtype": null, "sourceOperation": "Insights", "sourceSignals": ["Synthetic Afrobeat Star"], "affinity": 0.88, "popularity": 0.74, "tags": ["streetwear"], "metadata": { "shortDescription": "Synthetic sample streetwear brand.", "imageUrl": null, "externalUrl": null, "releaseYear": null, "location": null }, "quality": "Strong", "qualityReasons": ["resolved seed signal", "affinity returned"], "retrievedAt": "2026-10-25T12:00:00Z" },
+    { "key": "ev_003", "qlooEntityId": "synthetic-brand-013", "name": "Synthetic Danfo Denim", "entityType": "urn:entity:brand", "subtype": null, "sourceOperation": "Insights", "sourceSignals": ["Synthetic Afrobeat Star"], "affinity": 0.71, "popularity": 0.52, "tags": ["denim", "afrobeats"], "metadata": { "shortDescription": "Synthetic sample denim brand.", "imageUrl": null, "externalUrl": null, "releaseYear": null, "location": null }, "quality": "Strong", "qualityReasons": ["resolved seed signal", "affinity returned"], "retrievedAt": "2026-10-25T12:00:00Z" },
+    { "key": "ev_004", "qlooEntityId": "synthetic-artist-020", "name": "Synthetic Alte Collective", "entityType": "urn:entity:artist", "subtype": null, "sourceOperation": "Insights", "sourceSignals": ["Synthetic Afrobeat Star"], "affinity": 0.79, "popularity": 0.48, "tags": ["alte"], "metadata": { "shortDescription": "Synthetic sample artist collective.", "imageUrl": null, "externalUrl": null, "releaseYear": null, "location": null }, "quality": "Strong", "qualityReasons": ["resolved seed signal", "affinity returned"], "retrievedAt": "2026-10-25T12:00:00Z" },
+    { "key": "ev_005", "qlooEntityId": "synthetic-place-030", "name": "Synthetic Lekki Lounge", "entityType": "urn:entity:place", "subtype": null, "sourceOperation": "Insights", "sourceSignals": ["Synthetic Afrobeat Star"], "affinity": 0.66, "popularity": 0.41, "tags": ["nightlife"], "metadata": { "shortDescription": "Synthetic sample venue.", "imageUrl": null, "externalUrl": null, "releaseYear": null, "location": "Lagos, Nigeria" }, "quality": "Moderate", "qualityReasons": ["resolved seed signal", "location verified"], "retrievedAt": "2026-10-25T12:00:00Z" },
+    { "key": "ev_006", "qlooEntityId": "urn:tag:keyword:qloo:synthetic_street_culture", "name": "Synthetic Street Culture", "entityType": "urn:tag:keyword:qloo", "subtype": null, "sourceOperation": "Insights", "sourceSignals": ["Synthetic Afrobeat Star"], "affinity": 0.84, "popularity": 0.61, "tags": [], "metadata": { "shortDescription": null, "imageUrl": null, "externalUrl": null, "releaseYear": null, "location": null }, "quality": "Strong", "qualityReasons": ["resolved seed signal", "affinity returned"], "retrievedAt": "2026-10-25T12:00:00Z" },
+    { "key": "ev_007", "qlooEntityId": "synthetic-podcast-040", "name": "Synthetic Alte Podcast", "entityType": "urn:entity:podcast", "subtype": null, "sourceOperation": "Insights", "sourceSignals": ["streetwear"], "affinity": 0.52, "popularity": 0.33, "tags": ["culture"], "metadata": { "shortDescription": "Synthetic sample podcast.", "imageUrl": null, "externalUrl": null, "releaseYear": null, "location": null }, "quality": "Weak", "qualityReasons": ["tag-only signal"], "retrievedAt": "2026-10-25T12:00:00Z" }
+  ],
+  "insights": [
+    { "id": "ins_1", "title": "Music is the strongest cultural entry point", "finding": "Two synthetic artists (ev_001, ev_004) show the highest affinity with this audience.", "whyItMatters": "Music-led content is likely to feel native to the audience rather than like an ad.", "evidenceKeys": ["ev_001", "ev_004"], "evidenceStrength": "Strong", "assumptions": ["Affinity reflects taste, not purchase intent."], "limitations": [] },
+    { "id": "ins_2", "title": "Adjacent streetwear labels share the same audience", "finding": "Synthetic Lagos Streetwear Co and Synthetic Danfo Denim are strongly associated with the seed artist.", "whyItMatters": "These brands are natural benchmarks and possible collaboration partners.", "evidenceKeys": ["ev_002", "ev_003"], "evidenceStrength": "Strong", "assumptions": ["Partners may not be open to collaboration."], "limitations": [] },
+    { "id": "ins_3", "title": "Nightlife is a secondary, local signal", "finding": "A Lekki venue (ev_005) appears with moderate evidence strength.", "whyItMatters": "Small in-person activations may work, but evidence is thinner here.", "evidenceKeys": ["ev_005", "ev_006"], "evidenceStrength": "Moderate", "assumptions": ["Venue partnerships fit the budget."], "limitations": ["Only one local venue surfaced."] }
+  ],
+  "collaborations": [
+    { "id": "col_1", "partnerEvidenceKey": "ev_003", "partnerName": "Synthetic Danfo Denim", "culturalConnection": "Shared Afrobeats-adjacent audience and denim-plus-graphics aesthetic.", "format": "Capsule drop (2 pieces)", "fitRationale": "High affinity with the seed artist; complementary product rather than direct competitor.", "testIdea": "Pre-order 30 units of one co-branded tee before producing more.", "evidenceKeys": ["ev_003", "ev_001"], "evidenceStrength": "Strong", "assumptions": ["Partner is open to a small test."] }
+  ],
+  "campaigns": [
+    { "id": "cam_1", "title": "Studio-to-street content series", "objective": "Drive pre-orders for the capsule collection", "targetHypothesis": "Fans of the seed artists respond to behind-the-scenes music culture content.", "culturalInsight": "Music is the strongest cultural signal for this audience (ins_1).", "angle": "Behind-the-scenes music culture featuring the collection", "execution": ["Film three short studio-session reels wearing the collection", "Post weekly with a pre-order link", "Track saves and link clicks per post"], "successMetric": "Pre-order link clicks", "effortCategory": "Low", "evidenceKeys": ["ev_001", "ev_004", "ev_006"], "evidenceStrength": "Strong", "assumptions": ["Creators are available within budget."] }
+  ],
+  "experiments": [
+    { "id": "exp_1", "linkedRecommendationId": "cam_1", "hypothesis": "If we run behind-the-scenes music content for Lagos creatives, pre-order link clicks will improve.", "segment": "Gen Z and young millennial creatives in Lagos", "proposedCampaign": "Studio-to-street content series", "primaryMetric": "Pre-order link clicks", "measurementPeriodDays": 14, "successThreshold": "≥ 20% uplift vs the previous 14 days", "thresholdIsProposedDefault": true, "nextDecision": { "ifSuccess": "Extend the series and test the capsule collaboration.", "ifFailure": "Try a product-led angle for the next 14 days." }, "status": "Proposed", "observedResult": null, "resultNotes": null, "version": "0" }
+  ],
+  "unlinkedMentions": [
+    { "name": "Synthetic Unverified Festival", "note": "AI suggestion — not retrieved from Qloo" }
+  ],
+  "limitations": [
+    "SAMPLE DATA: every entity and figure in this plan is synthetic.",
+    "Only one local venue was found; place-based ideas rest on thin evidence."
+  ],
+  "stats": { "qlooCalls": 8, "llmCalls": 2, "evidenceByQuality": { "Strong": 5, "Moderate": 1, "Weak": 1 } },
+  "createdAt": "2026-10-25T12:00:00Z",
+  "completedAt": "2026-10-25T12:00:20Z"
+}

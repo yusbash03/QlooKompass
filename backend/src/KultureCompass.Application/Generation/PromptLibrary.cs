@@ -17,16 +17,38 @@ public static class PromptLibrary
 
     public const string InterpretationSchemaName = "brief-interpretation-v1";
     public const string GrowthPlanSchemaName = "growth-plan-llm-output-1.0";
+    public const string LlmOnlySchemaName = "growth-plan-llm-only-1.0";
+    public const string LlmOnlyPromptVersion = "llm-only-v1";
 
     public static string InterpretSystem { get; } = Load("Prompts.system.interpret-v1.md");
     public static string SynthSystem { get; } = Load("Prompts.system.synth-v1.md");
     public static string SynthUserTemplate { get; } = Load("Prompts.user.synth-v1.md");
     public static string RepairAddendum { get; } = Load("Prompts.system.repair-v1.md");
+    public static string LlmOnlySystem { get; } = Load("Prompts.system.llm-only-v1.md");
 
     /// <summary>Fresh copy each call — callers (provider clients) may mutate it to adapt to provider limits.</summary>
     public static JsonNode InterpretationSchema() => ParseSchema("Schemas.brief-interpretation.schema.json");
 
     public static JsonNode GrowthPlanSchema() => ParseSchema("Schemas.growth-plan-llm-output.schema.json");
+
+    /// <summary>BE-04 §4 LLM-only variant: the v1.0 schema with every evidence-key field removed, so a model with no
+    /// evidence is not forced to invent <c>ev_###</c> keys, and mentionedEntities.evidenceKey is always null.</summary>
+    public static JsonNode LlmOnlySchema()
+    {
+        var schema = GrowthPlanSchema().AsObject();
+        var props = schema["properties"]!.AsObject();
+        foreach (var section in new[] { "insights", "collaborations", "campaigns" })
+        {
+            var item = props[section]!["items"]!.AsObject();
+            item["properties"]!.AsObject().Remove("evidenceKeys");
+            item["properties"]!.AsObject().Remove("partnerEvidenceKey");
+            var required = item["required"]!.AsArray();
+            foreach (var node in required.Where(n => n!.GetValue<string>() is "evidenceKeys" or "partnerEvidenceKey").ToList())
+                required.Remove(node);
+        }
+        props["mentionedEntities"]!["items"]!["properties"]!["evidenceKey"] = new JsonObject { ["type"] = "null" };
+        return schema;
+    }
 
     private static Dictionary<string, string> LoadResources()
     {

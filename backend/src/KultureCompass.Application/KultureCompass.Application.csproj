@@ -16,6 +16,7 @@
     <EmbeddedResource Include="Generation\Prompts\*.md" LogicalName="Prompts.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Generation\Schemas\*.json" LogicalName="Schemas.%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\..\contracts\growth-plan-llm-output.schema.json" LogicalName="Schemas.growth-plan-llm-output.schema.json" />
+    <EmbeddedResource Include="Samples\sample-plan.json" LogicalName="Samples.sample-plan.json" />
   </ItemGroup>
 
   <ItemGroup>

@@ -19,6 +19,12 @@ public interface IGrowthPlanStore
     /// and acts on the plan's own owner_id.</summary>
     Task<GrowthPlan?> GetForProcessingAsync(Guid id, CancellationToken ct);
 
+    /// <summary>Tracked, owner-scoped: for edits to a finished plan (experiment tracking).</summary>
+    Task<GrowthPlan?> GetForUpdateAsync(Guid id, string ownerId, CancellationToken ct);
+
+    /// <summary>Saves with row-version checks; false when another writer changed the row first.</summary>
+    Task<bool> TrySaveChangesAsync(CancellationToken ct);
+
     /// <summary>Tracked Queued + Running plans, oldest first, for startup recovery.</summary>
     Task<IReadOnlyList<GrowthPlan>> GetUnfinishedAsync(CancellationToken ct);
 
