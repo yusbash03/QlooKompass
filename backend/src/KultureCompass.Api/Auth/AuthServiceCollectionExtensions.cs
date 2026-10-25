@@ -16,6 +16,8 @@ public static class AuthServiceCollectionExtensions
 {
     public const string AuthRateLimitPolicy = "auth";
     public const string AuthRefreshRateLimitPolicy = "auth-refresh";
+    public const string GenerationRateLimitPolicy = "generation";
+    public const string PublicRateLimitPolicy = "public";
     public const string EvaluatorPolicy = "Evaluator";
 
     public static IServiceCollection AddKultureCompassAuth(this IServiceCollection services, IConfiguration configuration)
@@ -72,18 +74,32 @@ public static class AuthServiceCollectionExtensions
                 }
                 return ValueTask.CompletedTask;
             };
-            o.AddPolicy(AuthRateLimitPolicy, http => PerIpPerMinute(http, limits => limits.AuthPerMinute));
-            o.AddPolicy(AuthRefreshRateLimitPolicy, http => PerIpPerMinute(http, limits => limits.AuthRefreshPerMinute));
+            o.AddPolicy(AuthRateLimitPolicy, http => PerMinute(http, PartitionKey.Ip, limits => limits.AuthPerMinute));
+            o.AddPolicy(AuthRefreshRateLimitPolicy, http => PerMinute(http, PartitionKey.Ip, limits => limits.AuthRefreshPerMinute));
+            o.AddPolicy(GenerationRateLimitPolicy, http => PerMinute(http, PartitionKey.UserOrIp, limits => limits.GenerationPerMinute));
+            o.AddPolicy(PublicRateLimitPolicy, http => PerMinute(http, PartitionKey.Ip, limits => limits.PublicPerMinute));
+            o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(http =>
+                http.Request.Path.StartsWithSegments("/api/v1/health")
+                    ? RateLimitPartition.GetNoLimiter("health")
+                    : PerMinute(http, PartitionKey.UserOrIp, limits => limits.GlobalPerMinute));
         });
 
         return services;
     }
 
-    private static RateLimitPartition<string> PerIpPerMinute(HttpContext http, Func<RateLimitingOptions, int> permitLimit)
+    private enum PartitionKey
+    {
+        Ip,
+        UserOrIp,
+    }
+
+    private static RateLimitPartition<string> PerMinute(HttpContext http, PartitionKey by, Func<RateLimitingOptions, int> permitLimit)
     {
         var limits = http.RequestServices.GetRequiredService<IOptions<RateLimitingOptions>>().Value;
         var ip = http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        var user = by == PartitionKey.UserOrIp ? http.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value : null;
+        var key = user is not null ? $"user:{user}" : $"ip:{ip}";
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = permitLimit(limits),
             Window = TimeSpan.FromMinutes(1),

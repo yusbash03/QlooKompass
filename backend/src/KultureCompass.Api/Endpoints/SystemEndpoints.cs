@@ -38,7 +38,8 @@ public static class SystemEndpoints
             return Results.Ok(meta);
         })
             .WithName("getMeta")
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting(Auth.AuthServiceCollectionExtensions.PublicRateLimitPolicy);
     }
 
     private static async Task WriteHealthResponse(HttpContext context, HealthReport report)

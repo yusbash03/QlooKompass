@@ -10,9 +10,9 @@ Started in BE-5; BE-10 completes this file. Each item says what is missing and w
   5 minutes. Access tokens expire after 15 minutes anyway.
 - **No cleanup job for refresh tokens yet** (02-security §1 "daily background job"). Expired or revoked rows
   pile up in `refresh_tokens`. They're never accepted, so this costs storage only.
-- **Rate limiting:** only the `auth` (10/min) and `auth-refresh` (30/min) per-IP policies exist so far. `global`,
-  `generation` and `public` arrive with their endpoints (BE-7/BE-9). Behind a reverse proxy the client IP needs
-  forwarded-headers config (BE-9); until then all proxied traffic shares one bucket.
+- **Rate limiting:** all 02-security §5 policies exist (`global`, `generation`, `public`, `auth`, `auth-refresh`).
+  Behind a reverse proxy the client IP needs forwarded-headers config (BE-9); until then all anonymous proxied
+  traffic shares one IP bucket. Signed-in traffic is partitioned per user.
 - **The 429 rate-limit response is unverified by tests.** It's configured, but the tests raise the limits so
   they don't trip it.
 
@@ -31,6 +31,15 @@ Started in BE-5; BE-10 completes this file. Each item says what is missing and w
   ran out (e.g. 13 planned, 12-call budget), the detail still reads "13 of 13 Qloo requests complete".
 - **Docker builds need `contracts/`.** The Application project embeds `contracts/growth-plan-llm-output.schema.json`,
   so the Docker build context must include `contracts/` (BE-10).
+
+## Growth plans / worker (BE-7)
+- **The queue is in-process (a bounded channel) and assumes a single API instance.** A second instance would not
+  see the first one's queue, and its startup recovery would fail the first instance's running plans. Scaling out
+  would need a DB-backed claim, which the architecture deliberately leaves out (no broker).
+- **A restart fails Running plans immediately** with `timeout` ("interrupted by a server restart"), rather than
+  only those older than the timeout (BE-01 §4 has the note). Queued plans are re-enqueued.
+- **Failed plans count toward the daily quota**: `usedToday` counts every plan created today.
+- **`PATCH /growth-plans/{id}/experiments/{experimentId}` comes in BE-8** (stretch).
 
 ## Qloo
 - See `docs/backend/qloo-verified-contract.md` §3 and §7. Demographics (R8) stays off; error bodies aren't parsed.

@@ -25,7 +25,10 @@ public static class ResultHttpExtensions
                 extensions: extensions);
         }
 
-        return TypedResults.Problem(detail: error.Message, statusCode: StatusFor(error.Kind), extensions: extensions);
+        var problem = TypedResults.Problem(detail: error.Message, statusCode: StatusFor(error.Kind), extensions: extensions);
+        return error.RetryAfterSeconds is { } seconds
+            ? new HeaderResult(problem, "Retry-After", seconds.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            : problem;
     }
 
     internal static int StatusFor(ErrorKind kind) => kind switch
@@ -54,6 +57,16 @@ public static class ResultHttpExtensions
         >= 500 => "internal_error",
         _ => null,
     };
+}
+
+/// <summary>Adds one response header, then executes the wrapped result.</summary>
+public sealed class HeaderResult(IResult inner, string name, string value) : IResult
+{
+    public Task ExecuteAsync(HttpContext httpContext)
+    {
+        httpContext.Response.Headers[name] = value;
+        return inner.ExecuteAsync(httpContext);
+    }
 }
 
 /// <summary>Wraps a success result and adds <c>ETag: "&lt;version&gt;"</c> (01-api-contract §1 concurrency).</summary>

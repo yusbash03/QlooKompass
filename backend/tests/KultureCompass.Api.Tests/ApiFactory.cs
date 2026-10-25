@@ -47,6 +47,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Llm:Provider", "Mock");
         builder.UseSetting("RateLimiting:AuthPerMinute", "10000");
         builder.UseSetting("RateLimiting:AuthRefreshPerMinute", "10000");
+        builder.UseSetting("RateLimiting:GlobalPerMinute", "100000");
+        builder.UseSetting("RateLimiting:GenerationPerMinute", "10000");
+        builder.UseSetting("RateLimiting:PublicPerMinute", "10000");
+        builder.UseSetting("Generation:DailyLimitPerUser", "50");
     }
 
     public async Task InitializeAsync()

@@ -1,6 +1,7 @@
 using FluentValidation;
 using KultureCompass.Application.Auth;
 using KultureCompass.Application.Generation;
+using KultureCompass.Application.Plans;
 using KultureCompass.Application.Profiles;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ public static class DependencyInjection
         services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
         services.AddSingleton<IValidator<BusinessProfileRequest>, BusinessProfileRequestValidator>();
         services.AddSingleton<IValidator<PageQuery>, PageQueryValidator>();
+        services.AddSingleton<IValidator<StartGrowthPlanRequest>, StartGrowthPlanRequestValidator>();
 
         services.AddScoped<RegisterHandler>();
         services.AddScoped<LoginHandler>();
@@ -32,6 +34,12 @@ public static class DependencyInjection
         services.AddScoped<BriefInterpreter>();
         services.AddScoped<RecommendationSynthesizer>();
         services.AddScoped<GrowthPlanPipeline>();
+
+        services.AddScoped<StartGrowthPlanHandler>();
+        services.AddScoped<GetGrowthPlanHandler>();
+        services.AddScoped<GetGrowthPlanStatusHandler>();
+        services.AddScoped<ListGrowthPlansHandler>();
+        services.AddScoped<GetQuotaHandler>();
 
         return services;
     }

@@ -15,8 +15,10 @@ public enum ErrorKind
 }
 
 /// <summary><paramref name="Code"/> is the contract's ProblemDetails <c>code</c> enum value
-/// (docs/shared/01-api-contract.md §5). <paramref name="Message"/> must be user-safe.</summary>
-public sealed record AppError(string Code, string Message, ErrorKind Kind, IReadOnlyDictionary<string, string[]>? Errors = null)
+/// (docs/shared/01-api-contract.md §5). <paramref name="Message"/> must be user-safe. <paramref name="RetryAfterSeconds"/>
+/// becomes a <c>Retry-After</c> header.</summary>
+public sealed record AppError(
+    string Code, string Message, ErrorKind Kind, IReadOnlyDictionary<string, string[]>? Errors = null, int? RetryAfterSeconds = null)
 {
     public static AppError NotFound() => new("not_found", "The resource was not found.", ErrorKind.NotFound);
 

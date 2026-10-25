@@ -169,12 +169,14 @@ internal sealed class InMemoryGrowthPlanStore(GrowthPlan plan) : IGrowthPlanStor
         return Task.CompletedTask;
     }
 
-    public Task AddAsync(GrowthPlan plan, CancellationToken ct) => throw new NotSupportedException();
+    public Task<bool> TryAddAsync(GrowthPlan plan, CancellationToken ct) => throw new NotSupportedException();
     public Task<GrowthPlan?> GetByIdAsync(Guid id, string ownerId, CancellationToken ct) => throw new NotSupportedException();
+    public Task<Plans.PlanStatusSnapshot?> GetStatusByIdAsync(Guid id, string ownerId, CancellationToken ct) => throw new NotSupportedException();
+    public Task<IReadOnlyList<GrowthPlan>> GetUnfinishedAsync(CancellationToken ct) => throw new NotSupportedException();
     public Task<GrowthPlan?> GetByIdempotencyKeyAsync(string ownerId, string idempotencyKey, CancellationToken ct) => throw new NotSupportedException();
     public Task<bool> HasActivePlanForProfileAsync(Guid businessProfileId, CancellationToken ct) => throw new NotSupportedException();
     public Task<int> CountCreatedSinceAsync(string ownerId, DateTimeOffset sinceUtc, CancellationToken ct) => throw new NotSupportedException();
-    public Task<(IReadOnlyList<GrowthPlan> Items, int TotalCount)> ListPagedAsync(
+    public Task<(IReadOnlyList<Plans.GrowthPlanListItem> Items, int TotalCount)> ListPagedAsync(
         string ownerId, int page, int pageSize, Guid? businessProfileId, GenerationStatus? status, CancellationToken ct) =>
         throw new NotSupportedException();
 }

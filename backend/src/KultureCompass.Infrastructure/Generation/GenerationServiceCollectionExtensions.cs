@@ -1,5 +1,6 @@
 using KultureCompass.Application.Abstractions;
 using KultureCompass.Application.Generation;
+using KultureCompass.Application.Plans;
 using KultureCompass.Application.Research;
 using KultureCompass.Infrastructure.Configuration;
 using KultureCompass.Infrastructure.Qloo;
@@ -36,6 +37,13 @@ public static class GenerationServiceCollectionExtensions
                 s.MaxRepairAttempts = llm.Value.MaxRepairAttempts;
                 s.QlooMode = qloo.Value.Mode == QlooMode.Mock ? DomainQlooMode.Mock : DomainQlooMode.Live;
             });
+
+        services.AddOptions<PlanQuotaSettings>()
+            .Configure<IOptions<GenerationSettings>>((q, generation) => q.DailyLimitPerUser = generation.Value.DailyLimitPerUser);
+
+        services.AddSingleton<ChannelGenerationQueue>();
+        services.AddSingleton<IGenerationQueue>(sp => sp.GetRequiredService<ChannelGenerationQueue>());
+        services.AddHostedService<GenerationWorker>();
 
         return services;
     }

@@ -22,4 +22,11 @@ public sealed class GenerationSettings
 
     [Range(1, 500)]
     public int MaxEvidenceItems { get; set; } = 60;
+
+    /// <summary>Plans generated in parallel by the background worker (BE-01 §4).</summary>
+    [Range(1, 8)]
+    public int WorkerConcurrency { get; set; } = 2;
+
+    /// <summary>Re-enqueue Queued / fail interrupted Running plans when the worker starts.</summary>
+    public bool RecoverOnStartup { get; set; } = true;
 }

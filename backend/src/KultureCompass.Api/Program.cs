@@ -158,6 +158,7 @@ try
     app.MapSystemEndpoints();
     app.MapAuthEndpoints();
     app.MapBusinessProfileEndpoints();
+    app.MapGrowthPlanEndpoints();
 
     app.Run();
 }

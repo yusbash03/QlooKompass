@@ -88,7 +88,8 @@ POST /growth-plans ─► StartGenerationHandler
 GenerationWorker (BackgroundService, MaxConcurrency=2 via SemaphoreSlim) ◄┘
    └─ new DI scope per plan → GrowthPlanPipeline.RunAsync(planId, ct)
         stages persisted after each step (status endpoint reads them)
-Startup: StuckPlanRecovery → Queued plans re-enqueued; Running plans older than timeout → Failed(timeout)
+Startup: StuckPlanRecovery → Queued plans re-enqueued; Running plans → Failed(timeout, "interrupted by a server restart").
+         (BE-7: all Running, not just those older than the timeout — single process, so none can still be live.)
 ```
 Overall per-plan timeout via linked `CancellationTokenSource(Generation:TimeoutSeconds)`.
 
