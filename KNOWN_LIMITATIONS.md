@@ -3,10 +3,13 @@
 Backend slices BE-0 to BE-10. Each item says what is missing and what happens instead.
 
 ## Project scope
-- **No frontend yet.** The PWA (FE slices) hasn't been built, so `docker compose up` serves the API only. The
-  `web` service is behind the `web` profile until `frontend/Dockerfile` exists. The judge demo runs as a
-  terminal script (`scripts/demo.sh`), and the PWA-specific demo steps (install, offline, evidence drawer,
-  colour coding) can't be shown.
+- **The PWA is a separate, in-progress project** (`QlooKompassUI`, a sibling checkout). This repo's compose
+  `web` service builds it from `FRONTEND_DIR` (default `../../frontend/QlooKompassUI`) but stays behind the `web`
+  profile, because that project has no Dockerfile/nginx config yet. Until then, `docker compose up` serves the
+  API only, and the judge demo runs as a terminal script (`scripts/demo.sh`).
+- **Two copies of `openapi.yaml`** (here and in the frontend's `MdFiles/contracts/`) must be kept identical by
+  hand. On 2026-10-25 the frontend copy was ahead (`GET /experiments`, experiment `startedAt`/`concludedAt`); the
+  backend adopted it and now matches it byte for byte.
 - **Not deployed publicly.** The local Docker stack is verified (mock and live); there's no public URL.
 
 ## Testing
@@ -16,6 +19,9 @@ Backend slices BE-0 to BE-10. Each item says what is missing and what happens in
   is unknown; Testcontainers/Docker startup contention is the leading guess. CI builds first and then runs
   `dotnet test --no-build`, the path that has never failed. If it recurs, the fixture's exception message is in
   the test log.
+- **A second unreproduced flake:** once in a full-solution run, the "Prompt logging in Production" startup-guard
+  case threw an exception other than `OptionsValidationException`. It passed in 10 later runs, alone and in full.
+  The assertion message includes the full exception, so a recurrence will show the cause.
 
 ## Auth (BE-5)
 - **Not in the MVP:** email confirmation, password reset by email, MFA, social login (02-security §1).

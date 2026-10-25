@@ -3,7 +3,7 @@
 #   Zero-key mock run:   QLOO_MODE=Mock LLM_PROVIDER=Mock docker compose up --build
 #   With your keys:      cp .env.example .env   # fill in values, never commit .env
 #                        docker compose up --build
-#   PWA (once frontend/ exists):  docker compose --profile web up --build
+#   With the PWA:        docker compose --profile web up --build   (needs a Dockerfile in the frontend project)
 #
 # Variables come from the shell or a gitignored .env (see .env.example for every option). Defaults below are
 # local-dev only; the API's startup guards refuse the placeholder JWT key and insecure cookies in Production.
@@ -74,12 +74,13 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  # The PWA (Vite build → nginx, proxies /api/ → api:8080 for same-origin refresh cookies). Its Dockerfile and nginx
-  # config arrive with the frontend slices; until frontend/ exists this service is opt-in via the "web" profile.
+  # The PWA lives in its own repository, a sibling checkout (default ../../frontend/QlooKompassUI; override with
+  # FRONTEND_DIR). Vite build → nginx, proxying /api/ → api:8080 so the refresh cookie stays same-origin. Opt-in via
+  # the "web" profile because that project doesn't ship its Dockerfile/nginx config yet.
   web:
     profiles: ["web"]
     build:
-      context: ./frontend
+      context: ${FRONTEND_DIR:-../../frontend/QlooKompassUI}
     ports:
       - "5173:80"
     depends_on:

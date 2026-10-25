@@ -25,6 +25,14 @@ public static class EvaluationEndpoints
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .ProducesProblem(StatusCodes.Status428PreconditionRequired);
 
+        app.MapGet("/api/v1/experiments", async (ListExperimentsHandler handler, CancellationToken ct, int page = 1, int pageSize = 20,
+                Domain.Experiments.ExperimentStatus? status = null) =>
+                (await handler.HandleAsync(new ListExperimentsQuery(page, pageSize, status), ct)).ToHttpResult(TypedResults.Ok))
+            .WithTags("GrowthPlans")
+            .WithName("listExperiments")
+            .Produces<Application.Common.PagedResult<ExperimentSummaryDto>>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         var evaluations = app.MapGroup("/api/v1/evaluations").WithTags("Evaluations")
             .RequireFeature(f => f.EvaluationMode, "Evaluation mode");
 

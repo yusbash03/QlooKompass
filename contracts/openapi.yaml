@@ -227,7 +227,7 @@ paths:
     patch:
       tags: [GrowthPlans]
       operationId: updateExperiment
-      description: (Stretch) Record experiment progress/result. Only tracking fields are mutable.
+      description: Record experiment progress/result (Launch → Measure loop). Only tracking fields are mutable.
       parameters: [ { $ref: "#/components/parameters/IfMatch" } ]
       requestBody:
         required: true
@@ -241,6 +241,19 @@ paths:
         "404": { $ref: "#/components/responses/Problem" }
         "412": { $ref: "#/components/responses/Problem" }
         "428": { $ref: "#/components/responses/Problem" }
+
+  /api/v1/experiments:
+    get:
+      tags: [GrowthPlans]
+      operationId: listExperiments
+      description: Cross-plan experiments hub (Proposed / Running / Concluded) for the launch → measure loop.
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/ExperimentStatus" } }
+      responses:
+        "200": { description: Page, content: { application/json: { schema: { $ref: "#/components/schemas/ExperimentSummaryPage" } } } }
+        "401": { $ref: "#/components/responses/Problem" }
 
   /api/v1/evaluations:
     post:
@@ -602,7 +615,26 @@ components:
         status: { $ref: "#/components/schemas/ExperimentStatus" }
         observedResult: { type: [string, "null"] }
         resultNotes: { type: [string, "null"] }
+        startedAt: { type: [string, "null"], format: date-time, description: Set when status becomes Running }
+        concludedAt: { type: [string, "null"], format: date-time, description: Set when status becomes Concluded or Abandoned }
         version: { type: string }
+
+    ExperimentSummary:
+      type: object
+      required: [growthPlanId, brandName, experiment]
+      properties:
+        growthPlanId: { type: string, format: uuid }
+        brandName: { type: string }
+        experiment: { $ref: "#/components/schemas/ExperimentDto" }
+
+    ExperimentSummaryPage:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ExperimentSummary" } }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalCount: { type: integer }
 
     UpdateExperimentRequest:
       type: object

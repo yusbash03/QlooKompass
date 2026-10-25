@@ -60,7 +60,13 @@ public sealed record NextDecisionDto(string IfSuccess, string IfFailure);
 public sealed record ExperimentDto(
     string Id, string LinkedRecommendationId, string Hypothesis, string Segment, string ProposedCampaign, string PrimaryMetric,
     int MeasurementPeriodDays, string SuccessThreshold, bool ThresholdIsProposedDefault, NextDecisionDto NextDecision,
-    ExperimentStatus Status, string? ObservedResult, string? ResultNotes, string Version);
+    ExperimentStatus Status, string? ObservedResult, string? ResultNotes, string Version,
+    DateTimeOffset? StartedAt = null, DateTimeOffset? ConcludedAt = null);
+
+/// <summary>contracts/openapi.yaml ExperimentSummary: one experiment in the cross-plan hub (GET /experiments).</summary>
+public sealed record ExperimentSummaryDto(Guid GrowthPlanId, string BrandName, ExperimentDto Experiment);
+
+public sealed record ListExperimentsQuery(int Page, int PageSize, ExperimentStatus? Status);
 
 public sealed record UnlinkedMentionDto(string Name, string Note);
 

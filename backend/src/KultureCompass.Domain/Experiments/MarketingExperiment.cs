@@ -18,6 +18,8 @@ public sealed class MarketingExperiment
     public ExperimentStatus Status { get; private set; }
     public string? ObservedResult { get; private set; }
     public string? ResultNotes { get; private set; }
+    public DateTimeOffset? StartedAt { get; private set; }
+    public DateTimeOffset? ConcludedAt { get; private set; }
     public uint Version { get; private set; }
 
     /// Reserved for EF Core materialization (field-based property access).
@@ -68,8 +70,17 @@ public sealed class MarketingExperiment
             measurementPeriodDays, successThreshold, thresholdIsProposedDefault, ifSuccess, ifFailure);
     }
 
-    public void UpdateTracking(ExperimentStatus status, string? observedResult, string? resultNotes)
+    /// <summary>Records progress. <see cref="StartedAt"/> is set the first time the experiment becomes Running (and
+    /// back-filled if it jumps straight to an end state); <see cref="ConcludedAt"/> is set on Concluded/Abandoned and
+    /// cleared if it is reopened.</summary>
+    public void UpdateTracking(ExperimentStatus status, string? observedResult, string? resultNotes, DateTimeOffset now)
     {
+        if (status is ExperimentStatus.Running or ExperimentStatus.Concluded or ExperimentStatus.Abandoned)
+            StartedAt ??= now;
+        ConcludedAt = status is ExperimentStatus.Concluded or ExperimentStatus.Abandoned ? ConcludedAt ?? now : null;
+        if (status == ExperimentStatus.Proposed)
+            StartedAt = null;
+
         Status = status;
         ObservedResult = Guard.OptionalMaxLength(observedResult, nameof(ObservedResult), 200);
         ResultNotes = Guard.OptionalMaxLength(resultNotes, nameof(ResultNotes), 1000);

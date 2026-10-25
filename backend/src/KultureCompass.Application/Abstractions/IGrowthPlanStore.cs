@@ -38,5 +38,9 @@ public interface IGrowthPlanStore
     Task<(IReadOnlyList<GrowthPlanListItem> Items, int TotalCount)> ListPagedAsync(
         string ownerId, int page, int pageSize, Guid? businessProfileId, GenerationStatus? status, CancellationToken ct);
 
+    /// <summary>Every experiment across the owner's plans (newest plan first), optionally filtered by status.</summary>
+    Task<(IReadOnlyList<ExperimentSummaryDto> Items, int TotalCount)> ListExperimentsAsync(
+        string ownerId, int page, int pageSize, Domain.Experiments.ExperimentStatus? status, CancellationToken ct);
+
     Task SaveChangesAsync(CancellationToken ct);
 }

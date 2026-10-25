@@ -175,6 +175,8 @@ internal sealed class InMemoryGrowthPlanStore(GrowthPlan plan) : IGrowthPlanStor
     public Task<IReadOnlyList<GrowthPlan>> GetUnfinishedAsync(CancellationToken ct) => throw new NotSupportedException();
     public Task<GrowthPlan?> GetForUpdateAsync(Guid id, string ownerId, CancellationToken ct) => throw new NotSupportedException();
     public Task<bool> TrySaveChangesAsync(CancellationToken ct) => throw new NotSupportedException();
+    public Task<(IReadOnlyList<Plans.ExperimentSummaryDto> Items, int TotalCount)> ListExperimentsAsync(
+        string ownerId, int page, int pageSize, Domain.Experiments.ExperimentStatus? status, CancellationToken ct) => throw new NotSupportedException();
     public Task<GrowthPlan?> GetByIdempotencyKeyAsync(string ownerId, string idempotencyKey, CancellationToken ct) => throw new NotSupportedException();
     public Task<bool> HasActivePlanForProfileAsync(Guid businessProfileId, CancellationToken ct) => throw new NotSupportedException();
     public Task<int> CountCreatedSinceAsync(string ownerId, DateTimeOffset sinceUtc, CancellationToken ct) => throw new NotSupportedException();

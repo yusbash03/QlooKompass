@@ -767,6 +767,10 @@ namespace KultureCompass.Infrastructure.Persistence.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<DateTimeOffset?>("ConcludedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("concluded_at");
+
                             b1.Property<string>("Hypothesis")
                                 .IsRequired()
                                 .HasMaxLength(500)
@@ -828,6 +832,10 @@ namespace KultureCompass.Infrastructure.Persistence.Migrations
                                 .HasMaxLength(300)
                                 .HasColumnType("character varying(300)")
                                 .HasColumnName("segment");
+
+                            b1.Property<DateTimeOffset?>("StartedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("started_at");
 
                             b1.Property<string>("Status")
                                 .IsRequired()

@@ -39,6 +39,8 @@ LLM; *unverified* means it was not run against the real thing.
   - log-redaction tests;
   - OpenAPI drift script, gitleaks config, GitHub Actions.
 - **Ops:** multi-stage non-root Dockerfile, compose (db → migrate → api, `web` profile), demo script, docs.
+- **Contract sync with the frontend:** adopted the frontend's newer `openapi.yaml`, adding `GET /experiments`
+  (cross-plan hub) and experiment `startedAt`/`concludedAt` (migration `AddExperimentTimestamps`).
 
 ## 2. Architecture and key decisions
 Modular monolith, Clean Architecture (Api → Infrastructure → Application → Domain, enforced by NetArchTest),
@@ -88,25 +90,26 @@ Measurements are in `docs/backend/llm-verified-contract.md`. A typical plan used
 ~2.2–2.5k output tokens over 2 calls. `OpenAiCompatible` is implemented but **unverified** live.
 
 ## 6. Database
-PostgreSQL 17, EF Core 10, snake_case. One migration, `20261024122741_InitialCreate`, creating:
+PostgreSQL 17, EF Core 10, snake_case. Migrations: `20261024122741_InitialCreate`, plus `AddExperimentTimestamps`
+(nullable `started_at`/`concluded_at` on `marketing_experiments`). `InitialCreate` creates:
 `users`, `user_claims`, `user_logins`, `user_tokens`, `refresh_tokens`, `business_profiles`, `growth_plans`,
 `growth_plan_evidence`, `growth_plan_recommendations`, `marketing_experiments`, `evaluation_runs`.
 - Concurrency uses `xmin`.
 - Unique `(owner_id, idempotency_key)`.
 - jsonb for snapshots, stage log and payloads.
-- Later slices needed no further migrations (checked with `dotnet ef migrations has-pending-model-changes`).
+- BE-5 to BE-10 needed no further migrations (checked with `dotnet ef migrations has-pending-model-changes`).
 
 ## 7. Build and test results (executed)
 ```bash
 dotnet build backend/KultureCompass.sln -c Release          # 0 warnings, 0 errors (warnings are errors)
 dotnet test  backend/KultureCompass.sln --filter "Category!=Live"
-#   Domain 39 · Application 136 · Architecture 3 · Infrastructure 51 · Api 63  → 292 passed, 0 failed
+#   Domain 42 · Application 136 · Architecture 3 · Infrastructure 51 · Api 64  → 296 passed, 0 failed
 LLM_API_KEY=… QLOO_API_KEY=… dotnet test backend/KultureCompass.sln --filter "Category=Live"
 #   6 Live tests (2 Qloo, 4 Gemini incl. full live pipeline and the LLM-only schema): all passed when run
-python3 scripts/openapi-drift.py openapi.generated.json contracts/openapi.yaml   # 21 operations, 0 drift
+python3 scripts/openapi-drift.py openapi.generated.json contracts/openapi.yaml   # 22 operations, 0 drift
 docker run … zricethezav/gitleaks:v8.21.2 git /repo --config /repo/.gitleaks.toml # no leaks (history + tree)
 ```
-One unreproduced test-infrastructure flake is recorded in KNOWN_LIMITATIONS (Testing).
+Two unreproduced test flakes are recorded in KNOWN_LIMITATIONS (Testing).
 
 ## 8. Real services vs mocks
 
@@ -121,12 +124,13 @@ One unreproduced test-infrastructure flake is recorded in KNOWN_LIMITATIONS (Tes
 | Full plan via Docker compose | ✅ live (twice) and mock | — |
 | Evaluation mode end to end | ✅ live via compose (grounded 10/10 traceable vs LLM-only 0/4) | ✅ mock |
 | Auth security (token claims, alg=none, wrong key, cookie flags) | ✅ manual against the running API | ✅ automated |
-| Refresh cookie in a real browser | ❌ not checked (no frontend) | — |
-| PWA / frontend | ❌ not built | — |
+| Refresh cookie in a real browser | ❌ not checked from this repo | — |
+| PWA / frontend | separate project `QlooKompassUI`, in progress, not exercised from this repo | — |
 
 ## 9. Blockers and known limitations
 No blockers for the backend. Open items, all in `KNOWN_LIMITATIONS.md`:
-- the frontend is missing;
+- the PWA is a separate, in-progress project with no Dockerfile yet;
+- two contract copies need to be kept in sync by hand;
 - there's no public deployment;
 - the in-process queue assumes a single instance;
 - the Gemini schema workaround;
@@ -142,7 +146,8 @@ docker compose down -v                                             # stop + drop
 ```
 
 ## 11. Next steps before public launch
-- Build the PWA (FE-0 to FE-9), then run the demo in a real browser and check the refresh cookie over HTTPS.
+- Finish the PWA (`QlooKompassUI`), add its Dockerfile, then run the demo in a real browser and check the refresh
+  cookie over HTTPS.
 - Deploy same-origin, with a fresh `Jwt:SigningKey`, `Jwt:CookieSecure=true` and `App:TrustForwardedHeaders` set
   for the proxy. Then verify the full demo on the public URL. Don't call it deployed before that.
 - Move to a paid LLM tier (free tier isn't private and its quota is small); verify the OpenAI-compatible fallback.

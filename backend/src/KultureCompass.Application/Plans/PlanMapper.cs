@@ -85,8 +85,8 @@ public static class PlanMapper
             p.EffortCategory, r.EvidenceKeys, r.EvidenceStrength, p.Assumptions);
     }
 
-    private static ExperimentDto ToExperiment(Domain.Experiments.MarketingExperiment e) => new(
+    public static ExperimentDto ToExperiment(Domain.Experiments.MarketingExperiment e) => new(
         e.Id, e.LinkedRecommendationId, e.Hypothesis, e.Segment, e.ProposedCampaign, e.PrimaryMetric, e.MeasurementPeriodDays,
         e.SuccessThreshold, e.ThresholdIsProposedDefault, new NextDecisionDto(e.IfSuccess, e.IfFailure), e.Status, e.ObservedResult,
-        e.ResultNotes, e.Version.ToString(CultureInfo.InvariantCulture));
+        e.ResultNotes, e.Version.ToString(CultureInfo.InvariantCulture), e.StartedAt, e.ConcludedAt);
 }

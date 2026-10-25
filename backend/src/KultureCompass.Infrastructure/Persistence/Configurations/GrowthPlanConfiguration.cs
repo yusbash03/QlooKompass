@@ -200,6 +200,8 @@ public sealed class GrowthPlanConfiguration : IEntityTypeConfiguration<GrowthPla
             exp.Property(e => e.Status).HasConversion<string>().HasMaxLength(20).HasDefaultValue(ExperimentStatus.Proposed).IsRequired();
             exp.Property(e => e.ObservedResult).HasColumnName("observed_result").HasMaxLength(200);
             exp.Property(e => e.ResultNotes).HasColumnName("result_notes").HasMaxLength(1000);
+            exp.Property(e => e.StartedAt).HasColumnName("started_at");
+            exp.Property(e => e.ConcludedAt).HasColumnName("concluded_at");
             exp.Property(e => e.Version).HasColumnName("xmin").HasColumnType("xid").IsRowVersion().ValueGeneratedOnAddOrUpdate();
 
             exp.ToTable(t => t.HasCheckConstraint(

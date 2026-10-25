@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ListGrowthPlansHandler>();
         services.AddScoped<GetQuotaHandler>();
         services.AddScoped<UpdateExperimentHandler>();
+        services.AddScoped<ListExperimentsHandler>();
 
         services.AddScoped<StartEvaluationHandler>();
         services.AddScoped<GetEvaluationHandler>();

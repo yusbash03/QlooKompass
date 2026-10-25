@@ -1,5 +1,6 @@
 using KultureCompass.Application.Abstractions;
 using KultureCompass.Application.Plans;
+using KultureCompass.Domain.Experiments;
 using KultureCompass.Domain.Plans;
 using KultureCompass.Domain.Recommendations;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +112,26 @@ public sealed class GrowthPlanStore(AppDbContext db) : IGrowthPlanStore
         return ([.. rows.Select(r => new GrowthPlanListItem(
             r.Id, r.BusinessProfileId, r.BriefSnapshot.BrandName, r.Status, r.Summary?.Headline, r.IsMock,
             new PlanCountsDto(r.Evidence, r.Insights, r.Collaborations, r.Campaigns, r.Experiments), r.CreatedAt, r.CompletedAt))], totalCount);
+    }
+
+    public async Task<(IReadOnlyList<ExperimentSummaryDto> Items, int TotalCount)> ListExperimentsAsync(
+        string ownerId, int page, int pageSize, ExperimentStatus? status, CancellationToken ct)
+    {
+        var query = db.GrowthPlans.AsNoTracking()
+            .Where(p => p.OwnerId == ownerId)
+            .SelectMany(p => p.Experiments
+                .Where(e => status == null || e.Status == status)
+                .Select(e => new { PlanId = p.Id, p.BriefSnapshot, p.CreatedAt, Experiment = e }));
+
+        var totalCount = await query.CountAsync(ct);
+        var rows = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .ThenBy(r => r.Experiment.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return ([.. rows.Select(r => new ExperimentSummaryDto(r.PlanId, r.BriefSnapshot.BrandName, PlanMapper.ToExperiment(r.Experiment)))], totalCount);
     }
 
     public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);

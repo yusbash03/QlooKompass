@@ -12,8 +12,9 @@ Compass then:
 
 Retrieved facts and AI-generated hypotheses stay separate everywhere: in the data, in the API and in the UI.
 
-**Status:** the backend (slices BE-0 to BE-10) is complete and verified against the live Qloo hackathon API and
-Gemini. The PWA frontend (FE slices) **has not been built yet**. See [ENGINEERING_REPORT.md](ENGINEERING_REPORT.md)
+**Status:** the backend (this repository, slices BE-0 to BE-10) is complete and verified against the live Qloo
+hackathon API and Gemini. The PWA is a **separate project**, `QlooKompassUI` (React + Vite), checked out next to
+this one at `../../frontend/QlooKompassUI` and still in progress. See [ENGINEERING_REPORT.md](ENGINEERING_REPORT.md)
 and [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
 ---
@@ -57,10 +58,21 @@ matching it.
 Dev tool: `dotnet run --project src/KultureCompass.Api -- research --profile-json $PWD/samples/lagos-streetwear-sample.json`
 prints the evidence table for a brief without an LLM or database.
 
+## Running with the PWA (local dev)
+
+```bash
+dotnet run --project backend/src/KultureCompass.Api                   # http profile → http://localhost:5206
+cd ../../frontend/QlooKompassUI && npm install && npm run dev         # Vite proxies /api → :5206 (same-origin cookie)
+```
+**Keeping the contract in sync.** The frontend generates its API types (`npm run gen:api`) from its own copy at
+`MdFiles/contracts/openapi.yaml`. This repo's `contracts/openapi.yaml` is what the backend is drift-checked against.
+Whenever either copy changes, copy it across and run the drift check. To check that the copies match:
+`cmp contracts/openapi.yaml ../../frontend/QlooKompassUI/MdFiles/contracts/openapi.yaml`.
+
 ## Tests
 
 ```bash
-dotnet test backend/KultureCompass.sln --filter "Category!=Live"     # 292 tests; needs Docker for Postgres
+dotnet test backend/KultureCompass.sln --filter "Category!=Live"     # 296 tests; needs Docker for Postgres
 LLM_API_KEY=... QLOO_API_KEY=... dotnet test backend/KultureCompass.sln --filter "Category=Live"   # real providers
 ```
 CI (`.github/workflows/`) does three things:
@@ -111,7 +123,7 @@ GET /growth-plans/{id}/status ◄── stage_log persisted after every stage
 | `docs/` | Product, API, security, testing and deployment specs; backend design docs; ADRs |
 | `scripts/` | `demo.sh`, `openapi-drift.py`, `qloo-probe.*` |
 | `design/`, `MdDocs/` | Design prompts and the original spec pack |
-| `frontend/` | *not created yet* (PWA, FE slices) |
+| `../../frontend/QlooKompassUI` | the PWA: a separate repository and sibling checkout, not part of this repo |
 
 ## Decisions and trade-offs
 
@@ -128,7 +140,8 @@ business briefs), develop in mock mode, and move to a paid tier before any real 
 to `LLM_PROVIDER=OpenAiCompatible` (Groq/OpenRouter).
 
 ## Things you still need to do yourself
-- Build the PWA (FE slices in `docs/frontend/FE-02-build-plan.md`), then `docker compose --profile web up`.
+- Finish the PWA (`QlooKompassUI`) and give it a Dockerfile + nginx config (proxy `/api/` → `api:8080`), then
+  `docker compose --profile web up --build`.
 - Pick public hosting (see [docs/shared/04-deployment-and-demo.md](docs/shared/04-deployment-and-demo.md)) and serve the
   API same-origin under `/api` so the refresh cookie works.
 - **Rotate the Qloo and Gemini keys after the hackathon.** Both were pasted into a chat during development.

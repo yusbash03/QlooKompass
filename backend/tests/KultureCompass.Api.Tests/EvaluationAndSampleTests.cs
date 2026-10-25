@@ -192,6 +192,9 @@ public class EvaluationAndSampleTests(ApiFactory factory)
         updated.GetProperty("status").GetString().ShouldBe("Running");
         updated.GetProperty("observedResult").GetString().ShouldBe("Synthetic: 12 pre-orders in week 1");
         updated.GetProperty("hypothesis").GetString().ShouldBe(experiment.GetProperty("hypothesis").GetString());
+        experiment.GetProperty("startedAt").ValueKind.ShouldBe(JsonValueKind.Null);
+        updated.GetProperty("startedAt").GetDateTimeOffset().ShouldBeGreaterThan(DateTimeOffset.UtcNow.AddMinutes(-5));
+        updated.GetProperty("concludedAt").ValueKind.ShouldBe(JsonValueKind.Null);
         ok.Headers.ETag!.Tag.ShouldNotBe($"\"{version}\"");
 
         var stale = await SendAsync(_client, HttpMethod.Patch, url, session.AccessToken, body, ifMatch: $"\"{version}\"");
@@ -201,6 +204,38 @@ public class EvaluationAndSampleTests(ApiFactory factory)
         var tooLong = await SendAsync(_client, HttpMethod.Patch, url, session.AccessToken,
             new { status = "Concluded", observedResult = new string('x', 201) }, ifMatch: ok.Headers.ETag.Tag);
         tooLong.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Experiments_hub_lists_the_callers_experiments_across_plans_with_status_filter()
+    {
+        var (session, planId) = await CompletedPlanAsync();
+        var otherProfile = await CreateProfileAsync(_client, session.AccessToken);
+        var second = await SendAsync(_client, HttpMethod.Post, "/api/v1/growth-plans", session.AccessToken,
+            new { businessProfileId = otherProfile }, Guid.NewGuid().ToString());
+        var secondPlanId = (await second.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        await PollAsync(_client, session.AccessToken, $"/api/v1/growth-plans/{secondPlanId}/status", IsTerminal);
+        await CompletedPlanAsync(); // someone else's plan must not appear
+
+        var plan = await (await SendAsync(_client, HttpMethod.Get, $"/api/v1/growth-plans/{planId}", session.AccessToken)).Content.ReadFromJsonAsync<JsonElement>();
+        var exp = plan.GetProperty("experiments")[0];
+        await SendAsync(_client, HttpMethod.Patch, $"/api/v1/growth-plans/{planId}/experiments/{exp.GetProperty("id").GetString()}",
+            session.AccessToken, new { status = "Running" }, ifMatch: $"\"{exp.GetProperty("version").GetString()}\"");
+
+        var all = await (await SendAsync(_client, HttpMethod.Get, "/api/v1/experiments", session.AccessToken)).Content.ReadFromJsonAsync<JsonElement>();
+        var running = await (await SendAsync(_client, HttpMethod.Get, "/api/v1/experiments?status=Running", session.AccessToken)).Content.ReadFromJsonAsync<JsonElement>();
+        var paged = await (await SendAsync(_client, HttpMethod.Get, "/api/v1/experiments?pageSize=1", session.AccessToken)).Content.ReadFromJsonAsync<JsonElement>();
+
+        all.GetProperty("totalCount").GetInt32().ShouldBe(2);
+        var items = all.GetProperty("items").EnumerateArray().ToList();
+        items.Select(i => i.GetProperty("growthPlanId").GetGuid()).ToHashSet().ShouldBe([planId, secondPlanId], ignoreOrder: true);
+        items[0].GetProperty("growthPlanId").GetGuid().ShouldBe(secondPlanId); // newest plan first
+        items.ShouldAllBe(i => i.GetProperty("brandName").GetString() == "Synthetic Eko Threads");
+        running.GetProperty("totalCount").GetInt32().ShouldBe(1);
+        running.GetProperty("items")[0].GetProperty("experiment").GetProperty("startedAt").ValueKind.ShouldBe(JsonValueKind.String);
+        paged.GetProperty("items").GetArrayLength().ShouldBe(1);
+        paged.GetProperty("totalCount").GetInt32().ShouldBe(2);
+        (await _client.GetAsync("/api/v1/experiments")).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
