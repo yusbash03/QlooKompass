@@ -24,9 +24,10 @@ public class QlooLiveTests
             ApiKey = ApiKey,
             Mode = QlooMode.Live,
         }));
-        services.AddSingleton<QlooApiKeyHandler>();
-        services.AddSingleton<QlooThrottleHandler>();
-        services.AddSingleton<RedactingLoggingHandler>();
+        services.AddSingleton<QlooRateLimiter>();
+        services.AddTransient<QlooApiKeyHandler>();
+        services.AddTransient<QlooThrottleHandler>();
+        services.AddTransient<RedactingLoggingHandler>();
         services.AddHttpClient<IQlooClient, QlooClient>(client => client.BaseAddress = new Uri(
                 Environment.GetEnvironmentVariable("QLOO_BASE_URL") ?? "https://hackathon.api.qloo.com"))
             .AddHttpMessageHandler<QlooApiKeyHandler>()

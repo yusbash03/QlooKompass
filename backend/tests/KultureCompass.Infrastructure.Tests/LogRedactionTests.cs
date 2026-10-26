@@ -60,9 +60,10 @@ public class LogRedactionTests
         var services = new ServiceCollection();
         services.AddLogging(b => b.AddProvider(logs).SetMinimumLevel(LogLevel.Trace));
         services.AddSingleton(Options.Create(new QlooOptions { ApiKey = QlooKey, Mode = QlooMode.Live, BaseUrl = "https://example.test" }));
-        services.AddSingleton<QlooApiKeyHandler>();
-        services.AddSingleton<QlooThrottleHandler>();
-        services.AddSingleton<RedactingLoggingHandler>();
+        services.AddSingleton<QlooRateLimiter>();
+        services.AddTransient<QlooApiKeyHandler>();
+        services.AddTransient<QlooThrottleHandler>();
+        services.AddTransient<RedactingLoggingHandler>();
         services.AddHttpClient<IQlooClient, QlooClient>(c => c.BaseAddress = new Uri("https://example.test"))
             .ConfigurePrimaryHttpMessageHandler(() => fake)
             .AddHttpMessageHandler<QlooApiKeyHandler>()

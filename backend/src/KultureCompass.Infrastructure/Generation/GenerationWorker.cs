@@ -53,6 +53,7 @@ public sealed partial class GenerationWorker(
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         LogRunCrashed(logger, ex, planId);
+                        await FailIfUnfinishedAsync(planId).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -69,6 +70,30 @@ public sealed partial class GenerationWorker(
         // Let in-flight runs observe cancellation and persist; anything left Running is failed by recovery next start.
         await Task.WhenAll(inFlight.Values).ConfigureAwait(false);
     }
+
+    /// <summary>A crash outside the pipeline (e.g. while building its dependencies) must not leave the plan Queued
+    /// forever — that would also block its profile via the one-active-plan rule. Fail it with a generic error.</summary>
+    private async Task FailIfUnfinishedAsync(Guid planId)
+    {
+        try
+        {
+            await using var scope = scopes.CreateAsyncScope();
+            var store = scope.ServiceProvider.GetRequiredService<IGrowthPlanStore>();
+            var plan = await store.GetForProcessingAsync(planId, CancellationToken.None).ConfigureAwait(false);
+            if (plan is null || plan.IsTerminal)
+                return;
+            plan.Fail(new PlanError(PlanErrorCode.InternalError, "Something went wrong while generating this plan."),
+                scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow());
+            await store.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            LogFailMarkingFailed(logger, ex, planId); // recovery on next startup still catches it
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Could not mark crashed plan {PlanId} as Failed.")]
+    private static partial void LogFailMarkingFailed(ILogger logger, Exception ex, Guid planId);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Generation run for plan {PlanId} crashed outside the pipeline.")]
     private static partial void LogRunCrashed(ILogger logger, Exception ex, Guid planId);

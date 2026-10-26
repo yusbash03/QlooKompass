@@ -28,9 +28,12 @@ public static class QlooServiceCollectionExtensions
             return services;
         }
 
-        services.AddSingleton<QlooApiKeyHandler>();
-        services.AddSingleton<QlooThrottleHandler>();
-        services.AddSingleton<RedactingLoggingHandler>();
+        // Handlers MUST be transient: IHttpClientFactory rebuilds the handler chain every HandlerLifetime (2 min) and
+        // throws if a DelegatingHandler instance is reused. Shared state (the rate limiter) lives in a singleton.
+        services.AddSingleton<QlooRateLimiter>();
+        services.AddTransient<QlooApiKeyHandler>();
+        services.AddTransient<QlooThrottleHandler>();
+        services.AddTransient<RedactingLoggingHandler>();
 
         var attemptTimeout = TimeSpan.FromSeconds(Math.Max(1, qlooOptions.TimeoutSeconds));
 

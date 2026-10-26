@@ -141,9 +141,10 @@ public class LlmLiveTests(PostgresFixture fixture, ITestOutputHelper output)
         {
             BaseUrl = "https://hackathon.api.qloo.com", ApiKey = QlooKey, Mode = QlooMode.Live,
         }));
-        services.AddSingleton<QlooApiKeyHandler>();
-        services.AddSingleton<QlooThrottleHandler>();
-        services.AddSingleton<RedactingLoggingHandler>();
+        services.AddSingleton<QlooRateLimiter>();
+        services.AddTransient<QlooApiKeyHandler>();
+        services.AddTransient<QlooThrottleHandler>();
+        services.AddTransient<RedactingLoggingHandler>();
         services.AddHttpClient<IQlooClient, QlooClient>(c => c.BaseAddress = new Uri("https://hackathon.api.qloo.com"))
             .AddHttpMessageHandler<QlooApiKeyHandler>()
             .AddHttpMessageHandler<QlooThrottleHandler>()
