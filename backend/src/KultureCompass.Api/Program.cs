@@ -28,6 +28,18 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // Hosting platforms (Render, Heroku, Fly): bind to $PORT when set, and accept a postgres:// DATABASE_URL.
+    // DATABASE_URL wins over appsettings so the committed localhost string never leaks into a deployment.
+    if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } port)
+        builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+    if (Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl)
+    {
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Default"] = PostgresUrl.ToConnectionString(databaseUrl),
+        });
+    }
+
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
@@ -149,6 +161,15 @@ try
         using var scope = app.Services.CreateScope();
         await ResearchConsoleCommand.RunAsync(scope.ServiceProvider, args[profileJsonIndex + 1], CancellationToken.None);
         return;
+    }
+
+    // For hosts without a separate migration step (Render free tier): opt in with Database__MigrateOnStartup=true.
+    // Single-instance only — concurrent instances would race on the migrations table.
+    if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+    {
+        using var scope = app.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+        Log.Information("Database migrations applied on startup.");
     }
 
     if (!app.Environment.IsProduction())

@@ -1,0 +1,99 @@
+# Render Blueprint — Kulture Compass (Postgres + API + PWA).  Dashboard → New → Blueprint → pick this repo.
+#
+# Why the UI proxies /api instead of calling the API host directly: onrender.com is a public suffix, so
+# kompass-api.onrender.com and kompass.onrender.com are DIFFERENT sites. The SameSite=Strict refresh cookie would
+# never be sent cross-site and every session would end after 15 minutes. The static site's /api/* rewrite keeps
+# the browser on one origin (docs/shared/02-security-and-config.md §1).
+#
+# If you rename a service, update the matching URLs below (API rewrite destination, Jwt__Issuer, App__BaseUrl).
+
+databases:
+  - name: kompass-db
+    plan: free            # free Render Postgres expires after a limited period — upgrade before relying on it
+    region: oregon        # US region: Gemini's free tier has location restrictions; keep API + DB together
+    databaseName: kulture_compass
+    user: kc
+
+services:
+  - type: web
+    name: kompass-api
+    runtime: docker
+    plan: free            # spins down when idle (~50 s cold start); in-flight plans are failed on restart
+    region: oregon
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .      # repo root: the image embeds contracts/growth-plan-llm-output.schema.json
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kompass-db
+          property: connectionString
+      - key: Database__MigrateOnStartup
+        value: "true"
+      # Render terminates TLS and already redirects HTTP→HTTPS; trust its X-Forwarded-* headers instead.
+      - key: App__TrustForwardedHeaders
+        value: "true"
+      - key: App__EnforceHttps
+        value: "false"
+      - key: App__BaseUrl
+        value: https://kompass.onrender.com
+      - key: Jwt__SigningKey
+        generateValue: true   # random 256-bit, base64 — meets the ≥ 32-byte startup guard
+      - key: Jwt__Issuer
+        value: https://kompass-api.onrender.com
+      - key: Jwt__Audience
+        value: kulture-compass-web
+      - key: Jwt__CookieSecure
+        value: "true"
+      - key: Qloo__Mode
+        value: Live
+      - key: Qloo__ApiKey
+        sync: false           # entered in the dashboard; never committed
+      - key: Llm__Provider
+        value: Gemini
+      - key: Llm__ApiKey
+        sync: false
+      - key: Llm__Model
+        value: gemini-flash-lite-latest
+      - key: Features__EvaluationMode
+        value: "true"         # each evaluation costs one extra Gemini call; set "false" if quota is tight
+      - key: Demo__UserEmail
+        sync: false           # optional judge account — only seeded outside Production, so leave unset here
+
+  - type: web
+    name: kompass
+    runtime: static
+    repo: https://github.com/yusbash03/QlooKompassUI
+    branch: main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: ""             # same-origin /api (required for the refresh cookie)
+      - key: VITE_APP_NAME
+        value: Kulture Compass
+      - key: VITE_ENABLE_EVALUATION
+        value: "true"
+    routes:
+      - type: rewrite         # proxy the API onto the UI's origin (see header comment)
+        source: /api/*
+        destination: https://kompass-api.onrender.com/api/*
+      - type: rewrite         # SPA fallback
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+      - path: /manifest.webmanifest
+        name: Cache-Control
+        value: no-cache
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
