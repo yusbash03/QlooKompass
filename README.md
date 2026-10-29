@@ -1,5 +1,7 @@
 # Kulture Compass
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 > Evidence-grounded cultural growth planning for small fashion, streetwear and lifestyle brands, starting
 > with Nigeria. **Qloo** supplies the cultural evidence, an **LLM** interprets it, and you decide.
 
@@ -19,39 +21,70 @@ and [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
 ---
 
-## Quick start (Docker, no keys needed)
+## Setup
+
+### Prerequisites
+
+| Tool | Needed for |
+|---|---|
+| [Git](https://git-scm.com/) | cloning |
+| [Docker](https://docs.docker.com/get-docker/) with Compose v2 | option A, and the test suite (Testcontainers) |
+| [.NET 10 SDK](https://dotnet.microsoft.com/download) | option B, and running tests |
+| PostgreSQL 17 | option B only (or run just the `db` service from compose) |
+| `curl`, `python3` | `scripts/demo.sh` |
+| A Qloo API key and a Gemini API key ([Google AI Studio](https://aistudio.google.com/apikey)) | live mode only; mock mode needs no keys |
+
+```bash
+git clone https://github.com/yusbash03/QlooKompass.git
+cd QlooKompass
+```
+
+### Option A: Docker, mock mode (no keys, fastest)
 
 ```bash
 QLOO_MODE=Mock LLM_PROVIDER=Mock docker compose up --build   # db → migrate → api on http://localhost:8080
-scripts/demo.sh                                               # terminal walkthrough of the judge demo
+curl http://localhost:8080/api/v1/health/ready                # expect "status": "Healthy"
+scripts/demo.sh                                               # terminal walkthrough: register, generate a plan, read it
 ```
 Mock mode uses hand-written synthetic Qloo fixtures (every entity is named "Synthetic …") and a deterministic
 mock LLM. Every plan says `isMock: true`, and its text is prefixed `[MOCK]`.
 
-## Live mode (real Qloo + Gemini)
+### Option A': Docker, live mode (real Qloo + Gemini)
 
 ```bash
-cp .env.example .env    # gitignored; set QLOO_MODE=Live, QLOO_API_KEY, LLM_PROVIDER=Gemini, LLM_API_KEY,
+cp .env.example .env    # gitignored. Set QLOO_MODE=Live, QLOO_API_KEY, LLM_PROVIDER=Gemini, LLM_API_KEY,
                         # and JWT_SIGNING_KEY=$(openssl rand -base64 48)
 docker compose up --build
 scripts/demo.sh
 ```
 A live plan takes about 15–20 s: ~12 Qloo calls and 2 Gemini calls (`gemini-flash-lite-latest`).
+Check `GET /api/v1/meta` to confirm which modes are active.
 
-## Running the API without Docker
+### Option B: .NET SDK, no Docker for the API
 
-Prerequisites: .NET 10 SDK, a PostgreSQL 17 instance, and Docker (only for the tests, via Testcontainers).
+`appsettings.Development.json` defaults to **live** Qloo + Gemini, so either set the keys or force mock mode.
 
 ```bash
 cd backend
-dotnet user-secrets set "Qloo:ApiKey" "<hackathon key>"   --project src/KultureCompass.Api
-dotnet user-secrets set "Llm:ApiKey"  "<Gemini key>"      --project src/KultureCompass.Api
-dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5432;Database=kulture_compass;Username=kc;Password=..." --project src/KultureCompass.Api
+# 1. Database (skip if you have Postgres already): docker compose up -d db   (from the repo root)
+dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5432;Database=kulture_compass;Username=kc;Password=change-me" --project src/KultureCompass.Api
 
+# 2. Keys, for live mode only
+dotnet user-secrets set "Qloo:ApiKey" "<Qloo key>"   --project src/KultureCompass.Api
+dotnet user-secrets set "Llm:ApiKey"  "<Gemini key>" --project src/KultureCompass.Api
+
+# 3. Migrate, then run
 dotnet run --project src/KultureCompass.Api -- --migrate          # apply EF Core migrations, then exit
-Qloo__Mode=Live Llm__Provider=Gemini dotnet run --project src/KultureCompass.Api
+dotnet run --project src/KultureCompass.Api                        # live, http://localhost:5206
+Qloo__Mode=Mock Llm__Provider=Mock dotnet run --project src/KultureCompass.Api   # or: mock, no keys
 ```
-API docs in Development: `http://localhost:<port>/scalar` (UI) and `/openapi/v1.json`.
+API docs in Development: `http://localhost:5206/scalar` (UI) and `/openapi/v1.json`.
+
+### Troubleshooting
+- **Startup fails with a Qloo/LLM key error:** live mode is on without a key. Add the key or use mock mode.
+- **Port 5432 or 8080 already in use:** stop the other service, or change the host port in `docker-compose.yml`.
+- **Tests fail to start containers:** Docker must be running; Testcontainers starts its own Postgres.
+- **Gemini 429 / quota:** develop in mock mode, or switch to `LLM_PROVIDER=OpenAiCompatible` (Groq/OpenRouter).
 The API contract lives in [contracts/openapi.yaml](contracts/openapi.yaml); a drift check keeps the backend
 matching it.
 
@@ -158,3 +191,8 @@ to `LLM_PROVIDER=OpenAiCompatible` (Groq/OpenRouter).
   API same-origin under `/api` so the refresh cookie works.
 - **Rotate the Qloo and Gemini keys after the hackathon.** Both were pasted into a chat during development.
 - Review Qloo's terms before enabling the response cache (`Qloo:CacheTtlMinutes`, off by default).
+
+## License
+
+Released under the [MIT License](LICENSE). The license covers this code only: Qloo and Gemini data and APIs are
+governed by their providers' own terms, and you need your own keys to use them.
